@@ -88,36 +88,7 @@ export default function ShopHeader() {
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-2">
-                            {/* Language Switcher */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setLangMenuOpen(!langMenuOpen)}
-                                    className="p-2.5 rounded-full hover:bg-muted transition-colors group flex items-center gap-1"
-                                >
-                                    <Globe className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                    <span className="text-xs font-medium uppercase text-muted-foreground">{locale}</span>
-                                </button>
 
-                                {langMenuOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
-                                        <div className="absolute right-0 top-12 w-32 bg-card border rounded-xl shadow-lg z-50 py-2">
-                                            <button
-                                                onClick={() => changeLanguage('tr')}
-                                                className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${locale === 'tr' ? 'font-bold text-primary' : ''}`}
-                                            >
-                                                Türkçe (TR)
-                                            </button>
-                                            <button
-                                                onClick={() => changeLanguage('en')}
-                                                className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${locale === 'en' ? 'font-bold text-primary' : ''}`}
-                                            >
-                                                English (EN)
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
 
                             {/* Search */}
                             <button
