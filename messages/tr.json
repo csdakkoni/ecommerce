@@ -1,0 +1,16 @@
+{
+    "Navigation": {
+        "home": "Anasayfa",
+        "products": "Ürünler",
+        "about": "Hakkımızda",
+        "contact": "İletişim"
+    },
+    "Product": {
+        "addToCart": "Sepete Ekle",
+        "price": "Fiyat",
+        "sale": "İNDİRİM"
+    },
+    "Common": {
+        "loading": "Yükleniyor..."
+    }
+}

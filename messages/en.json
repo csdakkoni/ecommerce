@@ -1,0 +1,16 @@
+{
+  "Navigation": {
+    "home": "Home",
+    "products": "Products",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "Product": {
+    "addToCart": "Add to Cart",
+    "price": "Price",
+    "sale": "SALE"
+  },
+  "Common": {
+    "loading": "Loading..."
+  }
+}
