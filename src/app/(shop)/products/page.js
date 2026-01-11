@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { SlidersHorizontal, X, Package } from 'lucide-react';
 
-export default function ProductListPage() {
+function ProductListContent() {
     const searchParams = useSearchParams();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -229,5 +229,13 @@ export default function ProductListPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ProductListPage() {
+    return (
+        <Suspense fallback={<div className="container py-24 text-center">Yükleniyor...</div>}>
+            <ProductListContent />
+        </Suspense>
     );
 }
