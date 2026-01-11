@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
     Package, ShoppingCart, Users, TrendingUp, ChevronRight, Clock,
@@ -303,8 +303,8 @@ export default function AdminDashboard() {
                             key={p.value}
                             onClick={() => setPeriod(p.value)}
                             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${period === p.value
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted hover:bg-muted/80'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted hover:bg-muted/80'
                                 }`}
                         >
                             {p.label}
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
                                             <p className="text-xs text-muted-foreground">{variant.name}</p>
                                         </div>
                                         <span className={`text-sm font-bold ${variant.stock_quantity <= 0 ? 'text-red-600' :
-                                                variant.stock_quantity < 5 ? 'text-amber-600' : 'text-muted-foreground'
+                                            variant.stock_quantity < 5 ? 'text-amber-600' : 'text-muted-foreground'
                                             }`}>
                                             {variant.stock_quantity} adet
                                         </span>

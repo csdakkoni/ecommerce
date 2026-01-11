@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { MessageCircle, Mail, Clock, CheckCircle, Package, Send, ChevronDown, ChevronUp } from 'lucide-react';
 

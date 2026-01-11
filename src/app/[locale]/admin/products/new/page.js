@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/navigation';
 import MediaUploader from '@/components/MediaUploader';
 
 export default function NewProductPage() {
