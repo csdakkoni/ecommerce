@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
     const searchParams = useSearchParams();
     const orderId = searchParams.get('order');
 
@@ -37,5 +37,13 @@ export default function CheckoutSuccessPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function CheckoutSuccessPage() {
+    return (
+        <Suspense fallback={<div className="container py-24 text-center">Yükleniyor...</div>}>
+            <CheckoutSuccessContent />
+        </Suspense>
     );
 }
