@@ -8,10 +8,18 @@ export default function middleware(request) {
     // Get country from Vercel headers or default to 'TR' for localhost
     const country = request.geo?.country || request.headers.get('x-vercel-ip-country') || 'TR';
 
-    // Developer bypass: Check for 'admin_mode' cookie
+    // Developer bypass: Check for 'admin_mode' cookie OR ?bypass parameter
     const isAdmin = request.cookies.has('admin_mode');
+    const hasBypassParam = request.nextUrl.searchParams.has('bypass');
 
     const pathname = request.nextUrl.pathname;
+
+    // If bypass parameter is present, set cookie and allow access
+    if (hasBypassParam) {
+        const response = intlMiddleware(request);
+        response.cookies.set('admin_mode', 'true', { maxAge: 60 * 60 * 24 * 365 }); // 1 year
+        return response;
+    }
 
     // Logic:
     // IF User is in TR -> FORCE /tr (Turkish + TL)
