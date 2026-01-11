@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabaseClient';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
@@ -11,6 +12,8 @@ import ProductInquiryModal from '@/components/ProductInquiryModal';
 export default function ProductDetailPage({ params }) {
     const resolvedParams = use(params);
     const id = resolvedParams.id;
+    const t = useTranslations('Product');
+    const locale = useLocale();
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -37,17 +40,35 @@ export default function ProductDetailPage({ params }) {
         if (id) fetchProduct();
     }, [id]);
 
+    const getPriceDisplay = () => {
+        if (!product) return { amount: 0, saleAmount: null, currency: '₺' };
+        if (locale !== 'tr' && product.price_eur) {
+            return {
+                amount: product.price_eur,
+                saleAmount: product.sale_price_eur,
+                currency: '€'
+            };
+        }
+        return {
+            amount: product.price,
+            saleAmount: product.sale_price,
+            currency: '₺'
+        };
+    };
+
+    const { amount, saleAmount, currency } = getPriceDisplay();
+
     const handleAddToCart = () => {
         addToCart(product, quantity);
-        toast.success('Ürün sepete eklendi!');
+        toast.success(t('addedToCart'));
     };
 
     const handleToggleFavorite = () => {
         toggleFavorite(product);
         if (isFavorite(product.id)) {
-            toast.info('Favorilerden çıkarıldı');
+            toast.info(t('favoriteRemoved'));
         } else {
-            toast.success('Favorilere eklendi!');
+            toast.success(t('favoriteAdded'));
         }
     };
 
@@ -82,12 +103,12 @@ export default function ProductDetailPage({ params }) {
                         {product.images && product.images.length > 0 ? (
                             <img
                                 src={product.images[selectedImage]}
-                                alt={product.name}
+                                alt={locale === 'en' && product.name_en ? product.name_en : product.name}
                                 className="w-full h-full object-cover"
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                Ürün Görseli
+                                {t('fabricType')}
                             </div>
                         )}
                     </div>
@@ -109,41 +130,41 @@ export default function ProductDetailPage({ params }) {
                 {/* Details */}
                 <div>
                     <div className="mb-2 text-sm text-primary font-semibold uppercase tracking-wider">
-                        {product.fabric_type || 'Premium Koleksiyon'}
+                        {product.fabric_type || 'Premium'}
                     </div>
-                    <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+                    <h1 className="text-4xl font-bold mb-4">{locale === 'en' && product.name_en ? product.name_en : product.name}</h1>
 
                     <div className="text-2xl font-medium mb-6">
-                        {product.sale_price ? (
+                        {saleAmount ? (
                             <>
-                                <span className="text-red-500">{product.sale_price} ₺</span>
-                                <span className="text-lg text-muted-foreground line-through ml-3">{product.price} ₺</span>
+                                <span className="text-red-500">{saleAmount} {currency}</span>
+                                <span className="text-lg text-muted-foreground line-through ml-3">{amount} {currency}</span>
                             </>
                         ) : (
-                            <>{product.price} ₺</>
+                            <>{amount} {currency}</>
                         )}
                         <span className="text-sm text-muted-foreground font-normal ml-2">/ metre</span>
                     </div>
 
                     <div className="prose prose-sm dark:prose-invert mb-8 text-muted-foreground">
-                        {product.description || "Bu özel kumaş tasarımcılar için özenle seçilmiştir."}
+                        {locale === 'en' && product.description_en ? product.description_en : product.description}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-8 border-y border-gray-100 dark:border-zinc-800 py-6">
                         <div>
-                            <span className="block text-xs uppercase text-muted-foreground mb-1">Kumaş Tipi</span>
+                            <span className="block text-xs uppercase text-muted-foreground mb-1">{t('fabricType')}</span>
                             <span className="font-medium">{product.fabric_type || '-'}</span>
                         </div>
                         <div>
-                            <span className="block text-xs uppercase text-muted-foreground mb-1">Genişlik</span>
+                            <span className="block text-xs uppercase text-muted-foreground mb-1">{t('width')}</span>
                             <span className="font-medium">{product.width_cm ? `${product.width_cm} cm` : '-'}</span>
                         </div>
                         <div>
-                            <span className="block text-xs uppercase text-muted-foreground mb-1">Ağırlık</span>
+                            <span className="block text-xs uppercase text-muted-foreground mb-1">{t('weight')}</span>
                             <span className="font-medium">{product.weight_gsm ? `${product.weight_gsm} gr/m²` : '-'}</span>
                         </div>
                         <div>
-                            <span className="block text-xs uppercase text-muted-foreground mb-1">Desen</span>
+                            <span className="block text-xs uppercase text-muted-foreground mb-1">{t('pattern')}</span>
                             <span className="font-medium">{product.pattern || '-'}</span>
                         </div>
                     </div>
@@ -169,7 +190,7 @@ export default function ProductDetailPage({ params }) {
                             onClick={handleAddToCart}
                             className="btn btn-primary flex-1 h-auto text-base"
                         >
-                            Sepete Ekle
+                            {t('addToCart')}
                         </button>
                     </div>
 
@@ -180,21 +201,21 @@ export default function ProductDetailPage({ params }) {
                             className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-colors ${isFav ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600' : 'hover:bg-muted'}`}
                         >
                             <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
-                            {isFav ? 'Favorilerde' : 'Favorilere Ekle'}
+                            {isFav ? t('favoriteAdded') : t('favoriteAdded').replace('!', '')}
                         </button>
                         <button
                             onClick={() => setInquiryOpen(true)}
                             className="flex items-center gap-2 px-4 py-2 rounded-md border hover:bg-muted transition-colors"
                         >
                             <MessageCircle className="w-4 h-4" />
-                            Satıcıya Sor
+                            {t('askSeller')}
                         </button>
                         <button
                             onClick={handleShare}
                             className="flex items-center gap-2 px-4 py-2 rounded-md border hover:bg-muted transition-colors"
                         >
                             <Share2 className="w-4 h-4" />
-                            Paylaş
+                            {t('share')}
                         </button>
                     </div>
 
@@ -202,15 +223,15 @@ export default function ProductDetailPage({ params }) {
                     <div className="grid grid-cols-3 gap-4 text-center text-xs text-muted-foreground">
                         <div className="flex flex-col items-center gap-1">
                             <Truck className="w-5 h-5" />
-                            <span>Hızlı Kargo</span>
+                            <span>{t('fastShipping')}</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
                             <Shield className="w-5 h-5" />
-                            <span>Güvenli Ödeme</span>
+                            <span>{t('securePayment')}</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
                             <RefreshCw className="w-5 h-5" />
-                            <span>Kolay İade</span>
+                            <span>{t('easyReturn')}</span>
                         </div>
                     </div>
                 </div>

@@ -8,7 +8,19 @@
   "Product": {
     "addToCart": "Add to Cart",
     "price": "Price",
-    "sale": "SALE"
+    "sale": "SALE",
+    "addedToCart": "Product added to cart!",
+    "favoriteAdded": "Added to favorites!",
+    "favoriteRemoved": "Removed from favorites",
+    "share": "Share",
+    "askSeller": "Ask Seller",
+    "fabricType": "Fabric Type",
+    "width": "Width",
+    "weight": "Weight",
+    "pattern": "Pattern",
+    "fastShipping": "Fast Shipping",
+    "securePayment": "Secure Payment",
+    "easyReturn": "Easy Return"
   },
   "Common": {
     "loading": "Loading..."

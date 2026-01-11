@@ -8,7 +8,19 @@
     "Product": {
         "addToCart": "Sepete Ekle",
         "price": "Fiyat",
-        "sale": "İNDİRİM"
+        "sale": "İNDİRİM",
+        "addedToCart": "Ürün sepete eklendi!",
+        "favoriteAdded": "Favorilere eklendi!",
+        "favoriteRemoved": "Favorilerden çıkarıldı",
+        "share": "Paylaş",
+        "askSeller": "Satıcıya Sor",
+        "fabricType": "Kumaş Tipi",
+        "width": "Genişlik",
+        "weight": "Ağırlık",
+        "pattern": "Desen",
+        "fastShipping": "Hızlı Kargo",
+        "securePayment": "Güvenli Ödeme",
+        "easyReturn": "Kolay İade"
     },
     "Common": {
         "loading": "Yükleniyor..."

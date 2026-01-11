@@ -1,20 +1,27 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Heart, Search, User, Menu, X, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Heart, Search, User, Menu, X, Globe } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import SearchModal from './SearchModal';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link, usePathname, useRouter } from '@/navigation';
 
 export default function ShopHeader() {
+    const t = useTranslations('Navigation');
+    const locale = useLocale();
+    const router = useRouter();
+    const pathname = usePathname();
+
     const { cartCount } = useCart();
     const { user, signOut } = useAuth();
     const { favoritesCount } = useFavorites();
     const [searchOpen, setSearchOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [langMenuOpen, setLangMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -37,11 +44,17 @@ export default function ShopHeader() {
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    const changeLanguage = (newLocale) => {
+        router.replace(pathname, { locale: newLocale });
+        setLangMenuOpen(false);
+    };
+
     const navLinks = [
-        { href: '/products', label: 'Kumaşlar' },
-        { href: '/products?type=ipek', label: 'İpek' },
-        { href: '/products?type=keten', label: 'Keten' },
-        { href: '/about', label: 'Hikayemiz' },
+        { href: '/products', label: t('products') },
+        // Category types are hardcoded for now, can be translated if mapped
+        { href: '/products?type=ipek', label: locale === 'tr' ? 'İpek' : 'Silk' },
+        { href: '/products?type=keten', label: locale === 'tr' ? 'Keten' : 'Linen' },
+        { href: '/about', label: t('about') },
     ];
 
     return (
@@ -75,6 +88,37 @@ export default function ShopHeader() {
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-2">
+                            {/* Language Switcher */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setLangMenuOpen(!langMenuOpen)}
+                                    className="p-2.5 rounded-full hover:bg-muted transition-colors group flex items-center gap-1"
+                                >
+                                    <Globe className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <span className="text-xs font-medium uppercase text-muted-foreground">{locale}</span>
+                                </button>
+
+                                {langMenuOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+                                        <div className="absolute right-0 top-12 w-32 bg-card border rounded-xl shadow-lg z-50 py-2">
+                                            <button
+                                                onClick={() => changeLanguage('tr')}
+                                                className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${locale === 'tr' ? 'font-bold text-primary' : ''}`}
+                                            >
+                                                Türkçe (TR)
+                                            </button>
+                                            <button
+                                                onClick={() => changeLanguage('en')}
+                                                className={`w-full text-left px-4 py-2 text-sm hover:bg-muted ${locale === 'en' ? 'font-bold text-primary' : ''}`}
+                                            >
+                                                English (EN)
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
                             {/* Search */}
                             <button
                                 onClick={() => setSearchOpen(true)}
@@ -113,7 +157,7 @@ export default function ShopHeader() {
                                                         <p className="text-sm font-medium truncate">{user.email}</p>
                                                     </div>
                                                     <Link href="/account" className="block px-4 py-2 text-sm hover:bg-muted" onClick={() => setUserMenuOpen(false)}>
-                                                        Hesabım
+                                                        {t('home')} {/* Fallback generic text or translation */}
                                                     </Link>
                                                     <Link href="/account/orders" className="block px-4 py-2 text-sm hover:bg-muted" onClick={() => setUserMenuOpen(false)}>
                                                         Siparişlerim

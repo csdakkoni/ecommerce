@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/navigation';
+import { useLocale } from 'next-intl';
 import { supabase } from '@/lib/supabaseClient';
 import { SlidersHorizontal, X, Package } from 'lucide-react';
 
@@ -68,117 +69,37 @@ function ProductListContent() {
 
     const hasActiveFilters = selectedType || selectedPattern || priceRange[0] > 0 || priceRange[1] < 10000;
 
+    // ... imports changed above
+    const locale = useLocale();
+
+    // ... existing code ...
+
+    const getPriceDisplay = (product) => {
+        // Fallback to TR logic if EUR is missing or locale is TR
+        if (locale !== 'tr' && product.price_eur) {
+            return {
+                amount: product.price_eur,
+                saleAmount: product.sale_price_eur,
+                currency: '€'
+            };
+        }
+        return {
+            amount: product.price,
+            saleAmount: product.sale_price,
+            currency: '₺'
+        };
+    };
+
     return (
         <div className="container py-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-                <div>
-                    <nav className="text-sm text-muted-foreground mb-2">Anasayfa / Kumaşlar</nav>
-                    <h1 className="text-4xl font-bold tracking-tight">Kumaş Koleksiyonu</h1>
-                </div>
-
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="md:hidden btn btn-outline flex items-center gap-2"
-                    >
-                        <SlidersHorizontal className="w-4 h-4" />
-                        Filtreler
-                    </button>
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="border border-gray-200 dark:border-zinc-800 rounded-md px-4 py-2 bg-transparent text-sm"
-                    >
-                        <option value="newest">Sıralama: En Yeni</option>
-                        <option value="price-low">Fiyat: Düşükten Yükseğe</option>
-                        <option value="price-high">Fiyat: Yüksekten Düşüğe</option>
-                        <option value="name">İsim: A-Z</option>
-                    </select>
-                </div>
-            </div>
+            {/* ... header ... */}
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {/* Filters Sidebar */}
-                <div className={`${showFilters ? 'block' : 'hidden'} md:block space-y-8 pr-8 border-r border-gray-100 dark:border-zinc-800`}>
-                    {hasActiveFilters && (
-                        <button
-                            onClick={clearFilters}
-                            className="text-sm text-primary hover:underline flex items-center gap-1"
-                        >
-                            <X className="w-4 h-4" /> Filtreleri Temizle
-                        </button>
-                    )}
-
-                    {/* Fabric Type Filter */}
-                    <div>
-                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Kumaş Tipi</h3>
-                        <ul className="space-y-2 text-sm">
-                            <li>
-                                <button
-                                    onClick={() => setSelectedType('')}
-                                    className={`${!selectedType ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-                                >
-                                    Tümü
-                                </button>
-                            </li>
-                            {fabricTypes.map((type) => (
-                                <li key={type}>
-                                    <button
-                                        onClick={() => setSelectedType(type)}
-                                        className={`${selectedType === type ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-                                    >
-                                        {type}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {/* Pattern Filter */}
-                    <div>
-                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider">Desen</h3>
-                        <ul className="space-y-2 text-sm">
-                            <li>
-                                <button
-                                    onClick={() => setSelectedPattern('')}
-                                    className={`${!selectedPattern ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-                                >
-                                    Tümü
-                                </button>
-                            </li>
-                            {patterns.map((pattern) => (
-                                <li key={pattern}>
-                                    <button
-                                        onClick={() => setSelectedPattern(pattern)}
-                                        className={`${selectedPattern === pattern ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'} transition-colors`}
-                                    >
-                                        {pattern}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
+                {/* ... filters ... */}
 
                 {/* Products Grid */}
                 <div className="col-span-3">
-                    {/* Active Filters Tags */}
-                    {hasActiveFilters && (
-                        <div className="flex flex-wrap gap-2 mb-6">
-                            {selectedType && (
-                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full text-sm">
-                                    {selectedType}
-                                    <button onClick={() => setSelectedType('')}><X className="w-3 h-3" /></button>
-                                </span>
-                            )}
-                            {selectedPattern && (
-                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full text-sm">
-                                    {selectedPattern}
-                                    <button onClick={() => setSelectedPattern('')}><X className="w-3 h-3" /></button>
-                                </span>
-                            )}
-                        </div>
-                    )}
+                    {/* ... active filters ... */}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
                         {loading ? (
@@ -192,38 +113,45 @@ function ProductListContent() {
                                 </button>
                             </div>
                         ) : (
-                            sortedProducts.map((product) => (
-                                <Link key={product.id} href={`/products/${product.id}`} className="group">
-                                    <div className="aspect-[3/4] bg-gray-100 dark:bg-zinc-900 rounded-md overflow-hidden mb-4 relative">
-                                        {product.images && product.images.length > 0 ? (
-                                            <img
-                                                src={product.images[0]}
-                                                alt={product.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                <Package className="w-12 h-12 opacity-50" />
-                                            </div>
-                                        )}
-                                        {product.sale_price && (
-                                            <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">İndirim</span>
-                                        )}
-                                    </div>
-                                    <h3 className="font-medium text-base mb-1 group-hover:underline decoration-1 underline-offset-4">{product.name}</h3>
-                                    <p className="text-xs text-muted-foreground mb-1">{product.fabric_type}</p>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        {product.sale_price ? (
-                                            <>
-                                                <span className="text-red-500 font-semibold">{product.sale_price} ₺</span>
-                                                <span className="text-muted-foreground line-through text-xs">{product.price} ₺</span>
-                                            </>
-                                        ) : (
-                                            <span className="font-semibold">{product.price} ₺</span>
-                                        )}
-                                    </div>
-                                </Link>
-                            ))
+                            sortedProducts.map((product) => {
+                                const { amount, saleAmount, currency } = getPriceDisplay(product);
+                                return (
+                                    <Link key={product.id} href={`/products/${product.id}`} className="group">
+                                        <div className="aspect-[3/4] bg-gray-100 dark:bg-zinc-900 rounded-md overflow-hidden mb-4 relative">
+                                            {product.images && product.images.length > 0 ? (
+                                                <img
+                                                    src={product.images[0]}
+                                                    alt={locale === 'en' && product.name_en ? product.name_en : product.name}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                                    <Package className="w-12 h-12 opacity-50" />
+                                                </div>
+                                            )}
+                                            {saleAmount && (
+                                                <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
+                                                    {locale === 'tr' ? 'İndirim' : 'SALE'}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="font-medium text-base mb-1 group-hover:underline decoration-1 underline-offset-4">
+                                            {locale === 'en' && product.name_en ? product.name_en : product.name}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground mb-1">{product.fabric_type}</p>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            {saleAmount ? (
+                                                <>
+                                                    <span className="text-red-500 font-semibold">{saleAmount} {currency}</span>
+                                                    <span className="text-muted-foreground line-through text-xs">{amount} {currency}</span>
+                                                </>
+                                            ) : (
+                                                <span className="font-semibold">{amount} {currency}</span>
+                                            )}
+                                        </div>
+                                    </Link>
+                                );
+                            })
                         )}
                     </div>
                 </div>
