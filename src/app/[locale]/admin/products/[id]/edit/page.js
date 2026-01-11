@@ -29,6 +29,11 @@ export default function EditProductPage({ params }) {
         usage_areas: '',
         category_id: '',
         is_active: true,
+        // i18n fields
+        name_en: '',
+        description_en: '',
+        price_usd: '',
+        price_eur: '',
     });
 
     useEffect(() => {
@@ -67,6 +72,11 @@ export default function EditProductPage({ params }) {
             usage_areas: data.usage_areas?.join(', ') || '',
             category_id: data.category_id || '',
             is_active: data.is_active ?? true,
+            // i18n fields
+            name_en: data.name_en || '',
+            description_en: data.description_en || '',
+            price_usd: data.price_usd?.toString() || '',
+            price_eur: data.price_eur?.toString() || '',
         });
         setImages(data.images || []);
         setLoading(false);
@@ -102,6 +112,11 @@ export default function EditProductPage({ params }) {
             category_id: formData.category_id || null,
             images: images.length > 0 ? images : null,
             is_active: formData.is_active,
+            // i18n fields
+            name_en: formData.name_en || null,
+            description_en: formData.description_en || null,
+            price_usd: formData.price_usd ? parseFloat(formData.price_usd) : null,
+            price_eur: formData.price_eur ? parseFloat(formData.price_eur) : null,
         };
 
         const { error } = await supabase
@@ -228,6 +243,61 @@ export default function EditProductPage({ params }) {
                                 className="w-full border rounded-md p-3 bg-background"
                                 value={formData.sale_price}
                                 onChange={handleChange}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Global / i18n Section */}
+                <div className="card p-6 border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+                    <h3 className="font-semibold mb-4 text-blue-700 dark:text-blue-300">🌍 Global / İngilizce İçerik</h3>
+                    <p className="text-sm text-muted-foreground mb-6">Yurt dışından gelen ziyaretçiler bu bilgileri görecek.</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium mb-1">Product Name (EN)</label>
+                            <input
+                                type="text"
+                                name="name_en"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.name_en}
+                                onChange={handleChange}
+                                placeholder={formData.name || 'İngilizce ürün adı'}
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium mb-1">Description (EN)</label>
+                            <textarea
+                                name="description_en"
+                                rows="3"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.description_en}
+                                onChange={handleChange}
+                                placeholder="English product description..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Price (USD $)</label>
+                            <input
+                                type="number"
+                                name="price_usd"
+                                step="0.01"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.price_usd}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Price (EUR €)</label>
+                            <input
+                                type="number"
+                                name="price_eur"
+                                step="0.01"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.price_eur}
+                                onChange={handleChange}
+                                placeholder="0.00"
                             />
                         </div>
                     </div>
