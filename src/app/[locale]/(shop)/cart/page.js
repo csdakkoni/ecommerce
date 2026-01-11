@@ -1,12 +1,23 @@
-
 'use client';
 
 import { useCart } from '@/context/CartContext';
 import { Trash2, ShoppingBag } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 
 export default function CartPage() {
+    const t = useTranslations('Cart');
+    const locale = useLocale();
     const { cart, removeFromCart, cartTotal } = useCart();
+
+    // Currency helper
+    const getCurrencySymbol = () => locale === 'tr' ? '₺' : '€';
+    const getShippingThreshold = () => locale === 'tr' ? 500 : 50;
+    const getShippingCost = () => locale === 'tr' ? 29.90 : 4.90;
+
+    const formatPrice = (price) => {
+        return `${price.toFixed(2)} ${getCurrencySymbol()}`;
+    };
 
     if (cart.length === 0) {
         return (
@@ -14,25 +25,27 @@ export default function CartPage() {
                 <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6">
                     <ShoppingBag className="w-8 h-8 text-gray-400" />
                 </div>
-                <h2 className="h2 mb-4">Sepetiniz Boş</h2>
-                <p className="p mb-8">Henüz sepetinize ürün eklemediniz.</p>
+                <h2 className="h2 mb-4">{t('emptyTitle')}</h2>
+                <p className="p mb-8">{t('emptyMessage')}</p>
                 <Link href="/products" className="btn btn-primary">
-                    Alışverişe Başla
+                    {t('startShopping')}
                 </Link>
             </div>
         );
     }
 
+    const shippingCost = cartTotal >= getShippingThreshold() ? 0 : getShippingCost();
+    const total = cartTotal + shippingCost;
+
     return (
         <div className="container py-12">
-            <h1 className="h2 mb-8">Alışveriş Sepeti</h1>
+            <h1 className="h2 mb-8">{t('title')}</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-2 space-y-6">
                     {cart.map((item) => (
                         <div key={`${item.id}-${item.variantId}`} className="flex gap-6 p-4 border rounded-lg">
                             <div className="w-24 h-24 bg-gray-100 dark:bg-zinc-900 rounded-md overflow-hidden flex-shrink-0">
-                                {/* Mock Image */}
                                 <div className="w-full h-full bg-gray-200 dark:bg-zinc-800"></div>
                             </div>
                             <div className="flex-1 flex flex-col justify-between">
@@ -49,8 +62,10 @@ export default function CartPage() {
                                     {item.variantName && <p className="text-sm text-gray-500">{item.variantName}</p>}
                                 </div>
                                 <div className="flex justify-between items-end">
-                                    <div className="text-sm text-gray-500">Adet: {item.quantity} × {item.price} ₺</div>
-                                    <div className="font-bold">{item.price * item.quantity} ₺</div>
+                                    <div className="text-sm text-gray-500">
+                                        {t('quantity')}: {item.quantity} × {formatPrice(item.price)}
+                                    </div>
+                                    <div className="font-bold">{formatPrice(item.price * item.quantity)}</div>
                                 </div>
                             </div>
                         </div>
@@ -59,23 +74,23 @@ export default function CartPage() {
 
                 <div className="lg:col-span-1">
                     <div className="card p-6 sticky top-24">
-                        <h3 className="font-bold text-lg mb-4">Sipariş Özeti</h3>
+                        <h3 className="font-bold text-lg mb-4">{t('orderSummary')}</h3>
                         <div className="space-y-2 mb-4 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Ara Toplam</span>
-                                <span>{cartTotal.toFixed(2)} ₺</span>
+                                <span className="text-gray-500">{t('subtotal')}</span>
+                                <span>{formatPrice(cartTotal)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Kargo</span>
-                                <span>{cartTotal >= 500 ? 'Ücretsiz' : '29.90 ₺'}</span>
+                                <span className="text-gray-500">{t('shipping')}</span>
+                                <span>{shippingCost === 0 ? t('free') : formatPrice(shippingCost)}</span>
                             </div>
                         </div>
                         <div className="border-t pt-4 flex justify-between font-bold text-lg mb-6">
-                            <span>Toplam</span>
-                            <span>{(cartTotal + (cartTotal >= 500 ? 0 : 29.90)).toFixed(2)} ₺</span>
+                            <span>{t('total')}</span>
+                            <span>{formatPrice(total)}</span>
                         </div>
                         <Link href="/checkout" className="btn btn-primary w-full h-12">
-                            Ödemeye Geç
+                            {t('proceedToCheckout')}
                         </Link>
                     </div>
                 </div>

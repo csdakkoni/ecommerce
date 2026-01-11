@@ -24,5 +24,47 @@
   },
   "Common": {
     "loading": "Loading..."
+  },
+  "Cart": {
+    "title": "Shopping Cart",
+    "emptyTitle": "Your Cart is Empty",
+    "emptyMessage": "You haven't added any products yet.",
+    "startShopping": "Start Shopping",
+    "quantity": "Qty",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "free": "Free",
+    "total": "Total",
+    "proceedToCheckout": "Proceed to Checkout"
+  },
+  "Checkout": {
+    "title": "Checkout",
+    "emptyTitle": "Your Cart is Empty",
+    "emptyMessage": "Add products to your cart to proceed with payment.",
+    "startShopping": "Start Shopping",
+    "step1": "Delivery Information",
+    "step2": "Payment",
+    "contactInfo": "Contact Information",
+    "email": "Email",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phone": "Phone",
+    "shippingAddress": "Shipping Address",
+    "address": "Address",
+    "city": "City",
+    "district": "District",
+    "zipCode": "Zip Code",
+    "country": "Country",
+    "continueToPayment": "Continue to Payment",
+    "paymentMethod": "Payment Method",
+    "paymentDemo": "This is a demo version. In production, a payment gateway will be displayed here.",
+    "cardNumber": "Card Number",
+    "expiry": "Expiry Date",
+    "cvv": "CVV",
+    "goBack": "Go Back",
+    "completeOrder": "Complete Order",
+    "processing": "Processing...",
+    "orderSummary": "Order Summary"
   }
 }

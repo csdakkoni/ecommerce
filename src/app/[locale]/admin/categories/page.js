@@ -9,7 +9,7 @@ export default function AdminCategoriesPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
-    const [formData, setFormData] = useState({ name: '', slug: '', description: '' });
+    const [formData, setFormData] = useState({ name: '', slug: '', description: '', name_en: '', description_en: '' });
 
     useEffect(() => {
         fetchCategories();
@@ -31,10 +31,16 @@ export default function AdminCategoriesPage() {
     const openModal = (category = null) => {
         if (category) {
             setEditingCategory(category);
-            setFormData({ name: category.name, slug: category.slug, description: category.description || '' });
+            setFormData({
+                name: category.name,
+                slug: category.slug,
+                description: category.description || '',
+                name_en: category.name_en || '',
+                description_en: category.description_en || ''
+            });
         } else {
             setEditingCategory(null);
-            setFormData({ name: '', slug: '', description: '' });
+            setFormData({ name: '', slug: '', description: '', name_en: '', description_en: '' });
         }
         setShowModal(true);
     };
@@ -195,10 +201,39 @@ export default function AdminCategoriesPage() {
                                     name="description"
                                     value={formData.description}
                                     onChange={handleChange}
-                                    rows={3}
+                                    rows={2}
                                     className="w-full border rounded-md p-3 bg-background"
                                     placeholder="Kategori açıklaması..."
                                 />
+                            </div>
+
+                            {/* i18n Fields */}
+                            <div className="border-t pt-4 mt-4">
+                                <p className="text-xs text-blue-600 font-semibold mb-3">🌍 İngilizce İçerik</p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Category Name (EN)</label>
+                                        <input
+                                            type="text"
+                                            name="name_en"
+                                            value={formData.name_en}
+                                            onChange={handleChange}
+                                            className="w-full border rounded-md p-3 bg-background"
+                                            placeholder="English category name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Description (EN)</label>
+                                        <textarea
+                                            name="description_en"
+                                            value={formData.description_en}
+                                            onChange={handleChange}
+                                            rows={2}
+                                            className="w-full border rounded-md p-3 bg-background"
+                                            placeholder="English description..."
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-4">
                                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline">

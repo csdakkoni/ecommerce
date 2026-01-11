@@ -24,5 +24,47 @@
     },
     "Common": {
         "loading": "Yükleniyor..."
+    },
+    "Cart": {
+        "title": "Alışveriş Sepeti",
+        "emptyTitle": "Sepetiniz Boş",
+        "emptyMessage": "Henüz sepetinize ürün eklemediniz.",
+        "startShopping": "Alışverişe Başla",
+        "quantity": "Adet",
+        "orderSummary": "Sipariş Özeti",
+        "subtotal": "Ara Toplam",
+        "shipping": "Kargo",
+        "free": "Ücretsiz",
+        "total": "Toplam",
+        "proceedToCheckout": "Ödemeye Geç"
+    },
+    "Checkout": {
+        "title": "Ödeme",
+        "emptyTitle": "Sepetiniz Boş",
+        "emptyMessage": "Ödeme yapmak için sepetinize ürün ekleyin.",
+        "startShopping": "Alışverişe Başla",
+        "step1": "Teslimat Bilgileri",
+        "step2": "Ödeme",
+        "contactInfo": "İletişim Bilgileri",
+        "email": "E-posta",
+        "firstName": "Ad",
+        "lastName": "Soyad",
+        "phone": "Telefon",
+        "shippingAddress": "Teslimat Adresi",
+        "address": "Adres",
+        "city": "İl",
+        "district": "İlçe",
+        "zipCode": "Posta Kodu",
+        "country": "Ülke",
+        "continueToPayment": "Ödemeye Geç",
+        "paymentMethod": "Ödeme Yöntemi",
+        "paymentDemo": "Bu demo sürümde ödeme simülasyonu yapılmaktadır.",
+        "cardNumber": "Kart Numarası",
+        "expiry": "Son Kullanma",
+        "cvv": "CVV",
+        "goBack": "Geri Dön",
+        "completeOrder": "Siparişi Tamamla",
+        "processing": "İşleniyor...",
+        "orderSummary": "Sipariş Özeti"
     }
 }
