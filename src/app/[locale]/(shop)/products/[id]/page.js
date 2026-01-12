@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useToast } from '@/context/ToastContext';
-import { Share2, Heart, MessageCircle, Truck, Shield, RefreshCw, Ruler, Package, Scissors } from 'lucide-react';
+import { Share2, Heart, MessageCircle, Truck, Shield, RefreshCw, Ruler, Package, Scissors, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductInquiryModal from '@/components/ProductInquiryModal';
 import MetreSelector from '@/components/MetreSelector';
 import SampleRequestModal from '@/components/SampleRequestModal';
@@ -27,6 +27,7 @@ export default function ProductDetailPage({ params }) {
     const [optionGroups, setOptionGroups] = useState([]);
     const [selectedOptions, setSelectedOptions] = useState({});
     const [calculatedPrice, setCalculatedPrice] = useState(null);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
     const { addToCart } = useCart();
     const { isFavorite, toggleFavorite } = useFavorites();
@@ -177,6 +178,36 @@ export default function ProductDetailPage({ params }) {
         }
     };
 
+    const nextImage = () => {
+        if (!product.images || product.images.length <= 1) return;
+        setSelectedImage((prev) => (prev + 1) % product.images.length);
+    };
+
+    const prevImage = () => {
+        if (!product.images || product.images.length <= 1) return;
+        setSelectedImage((prev) => (prev - 1 + product.images.length) % product.images.length);
+    };
+
+    const handleMainImageClick = () => {
+        if (product.images && product.images.length > 1) {
+            nextImage();
+        } else {
+            setIsLightboxOpen(true);
+        }
+    };
+
+    // Keyboard navigation for lightbox
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (!isLightboxOpen) return;
+            if (e.key === 'Escape') setIsLightboxOpen(false);
+            if (e.key === 'ArrowRight') nextImage();
+            if (e.key === 'ArrowLeft') prevImage();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLightboxOpen, product?.images]);
+
     if (loading) return <div className="container py-24 text-center">Yükleniyor...</div>;
     if (!product) return <div className="container py-24 text-center">Ürün bulunamadı.</div>;
 
@@ -187,13 +218,48 @@ export default function ProductDetailPage({ params }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 {/* Images */}
                 <div className="space-y-4">
-                    <div className="aspect-square bg-gray-100 dark:bg-zinc-900 rounded-lg overflow-hidden">
+                    <div className="relative group aspect-square bg-gray-100 dark:bg-zinc-900 rounded-lg overflow-hidden cursor-pointer">
                         {product.images && product.images.length > 0 ? (
-                            <img
-                                src={product.images[selectedImage]}
-                                alt={locale === 'en' && product.name_en ? product.name_en : product.name}
-                                className="w-full h-full object-cover"
-                            />
+                            <>
+                                <img
+                                    src={product.images[selectedImage]}
+                                    alt={locale === 'en' && product.name_en ? product.name_en : product.name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    onClick={handleMainImageClick}
+                                />
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsLightboxOpen(true);
+                                    }}
+                                    className="absolute top-4 right-4 p-2 bg-white/80 dark:bg-black/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white dark:hover:bg-black"
+                                >
+                                    <Maximize2 className="w-5 h-5" />
+                                </button>
+                                {product.images.length > 1 && (
+                                    <>
+                                        <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+                                            {selectedImage + 1} / {product.images.length}
+                                        </div>
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                                                className="p-1 bg-white/50 dark:bg-black/50 rounded-full hover:bg-white dark:hover:bg-black"
+                                            >
+                                                <ChevronLeft className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                                                className="p-1 bg-white/50 dark:bg-black/50 rounded-full hover:bg-white dark:hover:bg-black"
+                                            >
+                                                <ChevronRight className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </>
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                                 {t('fabricType')}
@@ -393,6 +459,49 @@ export default function ProductDetailPage({ params }) {
                 isOpen={sampleRequestOpen}
                 onClose={() => setSampleRequestOpen(false)}
             />
+
+            {/* Lightbox / Fullscreen Image Viewer */}
+            {isLightboxOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 md:p-12 animate-in fade-in duration-300">
+                    <button
+                        onClick={() => setIsLightboxOpen(false)}
+                        className="absolute top-6 right-6 p-2 text-white/70 hover:text-white transition-colors"
+                    >
+                        <X className="w-8 h-8" />
+                    </button>
+
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        {product.images?.length > 1 && (
+                            <>
+                                <button
+                                    onClick={prevImage}
+                                    className="absolute left-0 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                                >
+                                    <ChevronLeft className="w-10 h-10" />
+                                </button>
+                                <button
+                                    onClick={nextImage}
+                                    className="absolute right-0 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                                >
+                                    <ChevronRight className="w-10 h-10" />
+                                </button>
+                            </>
+                        )}
+
+                        <img
+                            src={product.images[selectedImage]}
+                            alt={product.name}
+                            className="max-w-full max-h-full object-contain select-none"
+                        />
+
+                        {product.images?.length > 1 && (
+                            <div className="absolute bottom-0 text-white/70 text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-md">
+                                {selectedImage + 1} / {product.images.length}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
