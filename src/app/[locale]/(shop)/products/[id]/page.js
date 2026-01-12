@@ -6,8 +6,10 @@ import { supabase } from '@/lib/supabaseClient';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useToast } from '@/context/ToastContext';
-import { Minus, Plus, Share2, Heart, MessageCircle, Truck, Shield, RefreshCw } from 'lucide-react';
+import { Share2, Heart, MessageCircle, Truck, Shield, RefreshCw, Ruler, Package, Scissors } from 'lucide-react';
 import ProductInquiryModal from '@/components/ProductInquiryModal';
+import MetreSelector from '@/components/MetreSelector';
+import SampleRequestModal from '@/components/SampleRequestModal';
 
 export default function ProductDetailPage({ params }) {
     const resolvedParams = use(params);
@@ -20,6 +22,8 @@ export default function ProductDetailPage({ params }) {
     const [quantity, setQuantity] = useState(1);
     const [selectedImage, setSelectedImage] = useState(0);
     const [inquiryOpen, setInquiryOpen] = useState(false);
+    const [sampleRequestOpen, setSampleRequestOpen] = useState(false);
+
 
     const { addToCart } = useCart();
     const { isFavorite, toggleFavorite } = useFavorites();
@@ -134,7 +138,7 @@ export default function ProductDetailPage({ params }) {
                     </div>
                     <h1 className="text-4xl font-bold mb-4">{locale === 'en' && product.name_en ? product.name_en : product.name}</h1>
 
-                    <div className="text-2xl font-medium mb-6">
+                    <div className="text-2xl font-medium mb-2">
                         {saleAmount ? (
                             <>
                                 <span className="text-red-500">{saleAmount} {currency}</span>
@@ -143,7 +147,24 @@ export default function ProductDetailPage({ params }) {
                         ) : (
                             <>{amount} {currency}</>
                         )}
-                        <span className="text-sm text-muted-foreground font-normal ml-2">/ metre</span>
+                        <span className="text-sm text-muted-foreground font-normal ml-2">
+                            / {product.unit_type === 'metre' ? 'metre' : 'adet'}
+                        </span>
+                    </div>
+
+                    {/* Unit Type Badge */}
+                    <div className="flex items-center gap-2 mb-6">
+                        {product.unit_type === 'metre' ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
+                                <Ruler className="w-3 h-3" />
+                                Metraj Bazlı Satış
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-muted text-muted-foreground text-sm rounded-full">
+                                <Package className="w-3 h-3" />
+                                Adet Satış
+                            </span>
+                        )}
                     </div>
 
                     <div className="prose prose-sm dark:prose-invert mb-8 text-muted-foreground">
@@ -169,33 +190,42 @@ export default function ProductDetailPage({ params }) {
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-4 mb-6">
-                        <div className="flex items-center border border-gray-200 dark:border-zinc-700 rounded-md">
-                            <button
-                                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                className="p-3 hover:bg-muted transition-colors"
-                            >
-                                <Minus className="w-4 h-4" />
-                            </button>
-                            <span className="w-12 text-center font-medium">{quantity}</span>
-                            <button
-                                onClick={() => setQuantity(q => q + 1)}
-                                className="p-3 hover:bg-muted transition-colors"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <button
-                            onClick={handleAddToCart}
-                            className="btn btn-primary flex-1 h-auto text-base"
-                        >
-                            {t('addToCart')}
-                        </button>
+                    {/* Quantity Selector - MetreSelector for fabric, simple for others */}
+                    <div className="mb-6">
+                        <MetreSelector
+                            unitType={product.unit_type || 'adet'}
+                            minQuantity={parseFloat(product.min_order_quantity) || (product.unit_type === 'metre' ? 0.5 : 1)}
+                            stepQuantity={parseFloat(product.step_quantity) || (product.unit_type === 'metre' ? 0.5 : 1)}
+                            maxQuantity={100}
+                            value={quantity}
+                            onChange={setQuantity}
+                            price={saleAmount || amount}
+                            currency={currency}
+                            showPrice={true}
+                            size="default"
+                        />
                     </div>
+
+                    {/* Add to Cart Button */}
+                    <button
+                        onClick={handleAddToCart}
+                        className="btn btn-primary w-full h-14 text-lg mb-6"
+                    >
+                        {t('addToCart')} • {((saleAmount || amount) * quantity).toFixed(2)} {currency}
+                    </button>
 
                     {/* Secondary Actions */}
                     <div className="flex flex-wrap gap-3 mb-8">
+                        {/* Sample Request - Only for fabric/metre products */}
+                        {product.unit_type === 'metre' && (
+                            <button
+                                onClick={() => setSampleRequestOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-md border border-primary/50 bg-primary/5 hover:bg-primary/10 text-primary transition-colors"
+                            >
+                                <Scissors className="w-4 h-4" />
+                                {locale === 'tr' ? 'Numune İste' : 'Request Sample'}
+                            </button>
+                        )}
                         <button
                             onClick={handleToggleFavorite}
                             className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-colors ${isFav ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600' : 'hover:bg-muted'}`}
@@ -242,6 +272,13 @@ export default function ProductDetailPage({ params }) {
                 product={product}
                 isOpen={inquiryOpen}
                 onClose={() => setInquiryOpen(false)}
+            />
+
+            {/* Sample Request Modal */}
+            <SampleRequestModal
+                product={product}
+                isOpen={sampleRequestOpen}
+                onClose={() => setSampleRequestOpen(false)}
             />
         </div>
     );

@@ -27,6 +27,12 @@ export default function NewProductPage() {
         description_en: '',
         price_usd: '',
         price_eur: '',
+        // Textile/Sales type fields
+        unit_type: 'adet',
+        min_order_quantity: '1',
+        step_quantity: '1',
+        fabric_content: '',
+        care_instructions: '',
     });
 
     const handleChange = (e) => {
@@ -70,6 +76,12 @@ export default function NewProductPage() {
             description_en: formData.description_en || null,
             price_usd: formData.price_usd ? parseFloat(formData.price_usd) : null,
             price_eur: formData.price_eur ? parseFloat(formData.price_eur) : null,
+            // Textile/Sales type fields
+            unit_type: formData.unit_type || 'adet',
+            min_order_quantity: formData.min_order_quantity ? parseFloat(formData.min_order_quantity) : 1,
+            step_quantity: formData.step_quantity ? parseFloat(formData.step_quantity) : 1,
+            fabric_content: formData.fabric_content || null,
+            care_instructions: formData.care_instructions || null,
         };
 
         const { error } = await supabase
@@ -177,6 +189,78 @@ export default function NewProductPage() {
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* Sales Type / Textile Settings */}
+                <div className="card p-6 border-2 border-primary/30 bg-primary/5">
+                    <h3 className="font-semibold mb-4 text-primary">📐 Satış Tipi & Metraj Ayarları</h3>
+                    <p className="text-sm text-muted-foreground mb-6">Kumaş ürünleri için metraj bazlı satış ayarlarını yapın.</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Satış Tipi *</label>
+                            <select
+                                name="unit_type"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.unit_type}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        unit_type: value,
+                                        min_order_quantity: value === 'metre' ? '0.5' : '1',
+                                        step_quantity: value === 'metre' ? '0.5' : '1',
+                                    }));
+                                }}
+                            >
+                                <option value="adet">📦 Adet Bazlı (Hazır Ürün)</option>
+                                <option value="metre">📐 Metre Bazlı (Kumaş)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Min. Sipariş ({formData.unit_type === 'metre' ? 'metre' : 'adet'})
+                            </label>
+                            <input
+                                type="number"
+                                name="min_order_quantity"
+                                step="0.1"
+                                min="0.1"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.min_order_quantity}
+                                onChange={handleChange}
+                                placeholder={formData.unit_type === 'metre' ? '0.5' : '1'}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Artış Miktarı ({formData.unit_type === 'metre' ? 'metre' : 'adet'})
+                            </label>
+                            <input
+                                type="number"
+                                name="step_quantity"
+                                step="0.1"
+                                min="0.1"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.step_quantity}
+                                onChange={handleChange}
+                                placeholder={formData.unit_type === 'metre' ? '0.5' : '1'}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Müşteri bu miktarın katlarında sipariş verebilir
+                            </p>
+                        </div>
+                    </div>
+
+                    {formData.unit_type === 'metre' && (
+                        <div className="mt-4 p-3 bg-primary/10 rounded-lg text-sm">
+                            ✅ Bu ürün <strong>{formData.min_order_quantity} metre</strong>'den başlayarak,
+                            <strong> {formData.step_quantity} metre</strong> artışlarla satılacak.
+                            <br />Örnek: {formData.min_order_quantity}m, {parseFloat(formData.min_order_quantity) + parseFloat(formData.step_quantity)}m, {parseFloat(formData.min_order_quantity) + parseFloat(formData.step_quantity) * 2}m...
+                        </div>
+                    )}
                 </div>
 
                 {/* Global / i18n Section */}
@@ -308,6 +392,30 @@ export default function NewProductPage() {
                                 value={formData.usage_areas}
                                 onChange={handleChange}
                                 placeholder="Giyim, Döşemelik, Perde (virgülle ayırın)"
+                            />
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium mb-1">Kumaş İçeriği</label>
+                            <input
+                                type="text"
+                                name="fabric_content"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.fabric_content}
+                                onChange={handleChange}
+                                placeholder="Örn: %100 Pamuk veya %60 Keten, %40 Pamuk"
+                            />
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium mb-1">Bakım Talimatları</label>
+                            <textarea
+                                name="care_instructions"
+                                rows="2"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.care_instructions}
+                                onChange={handleChange}
+                                placeholder="Örn: 30°C'de yıkayın, ütülemeden önce nemli bırakın..."
                             />
                         </div>
                     </div>
