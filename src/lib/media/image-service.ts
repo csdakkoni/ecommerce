@@ -18,6 +18,7 @@ export interface ImageTransformOptions {
     q?: number;
     fm?: 'avif' | 'webp' | 'jpeg' | 'png';
     bg?: string;
+    ar?: string; // Aspect ratio like "4:5"
 }
 
 export class ImageService {
@@ -76,7 +77,14 @@ export class ImageService {
         // 3. Transform using Sharp
         let pipeline = sharp(buffer);
 
-        // Resize
+        // Aspect Ratio and Resize
+        if (options.ar && !options.h && options.w) {
+            const [aw, ah] = options.ar.split(':').map(Number);
+            if (aw && ah) {
+                options.h = Math.round((options.w * ah) / aw);
+            }
+        }
+
         if (options.w || options.h) {
             pipeline = pipeline.resize(options.w, options.h, {
                 fit: options.fit || 'cover',

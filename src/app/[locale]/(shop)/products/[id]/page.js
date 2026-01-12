@@ -11,6 +11,7 @@ import ProductInquiryModal from '@/components/ProductInquiryModal';
 import MetreSelector from '@/components/MetreSelector';
 import SampleRequestModal from '@/components/SampleRequestModal';
 import ProductOptions from '@/components/ProductOptions';
+import { getOptimizedImageUrl } from '@/lib/media/utils';
 
 export default function ProductDetailPage({ params }) {
     const resolvedParams = use(params);
@@ -222,7 +223,7 @@ export default function ProductDetailPage({ params }) {
                         {product.images && product.images.length > 0 ? (
                             <>
                                 <img
-                                    src={product.images[selectedImage]}
+                                    src={getOptimizedImageUrl(product.images[selectedImage], { w: 1200, ar: '4:5' })}
                                     alt={locale === 'en' && product.name_en ? product.name_en : product.name}
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     onClick={handleMainImageClick}
@@ -274,7 +275,11 @@ export default function ProductDetailPage({ params }) {
                                     onClick={() => setSelectedImage(i)}
                                     className={`aspect-square bg-gray-50 dark:bg-zinc-800 rounded-lg overflow-hidden ${selectedImage === i ? 'ring-2 ring-primary' : 'hover:ring-2 ring-primary/50'}`}
                                 >
-                                    <img src={img} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
+                                    <img
+                                        src={getOptimizedImageUrl(img, { w: 300, ar: '1:1' })}
+                                        alt={`${product.name} ${i + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
                                 </button>
                             ))}
                         </div>

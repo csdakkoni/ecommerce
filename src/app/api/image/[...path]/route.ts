@@ -46,6 +46,7 @@ export async function GET(
         q: searchParams.get('q') ? parseInt(searchParams.get('q')!) : undefined,
         fm: (searchParams.get('fm') as any) || undefined,
         bg: searchParams.get('bg') || undefined,
+        ar: searchParams.get('ar') || undefined,
     };
 
     try {

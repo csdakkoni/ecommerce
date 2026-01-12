@@ -6,6 +6,7 @@ import { Link } from '@/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabaseClient';
 import { SlidersHorizontal, X, Package } from 'lucide-react';
+import { getOptimizedImageUrl } from '@/lib/media/utils';
 
 function ProductListContent() {
     const searchParams = useSearchParams();
@@ -118,7 +119,7 @@ function ProductListContent() {
                                         <div className="aspect-[3/4] bg-gray-100 dark:bg-zinc-900 rounded-md overflow-hidden mb-4 relative">
                                             {product.images && product.images.length > 0 ? (
                                                 <img
-                                                    src={product.images[0]}
+                                                    src={getOptimizedImageUrl(product.images[0], { w: 600, ar: '3:4' })}
                                                     alt={locale === 'en' && product.name_en ? product.name_en : product.name}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />
