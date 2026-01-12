@@ -8,32 +8,25 @@ export default function MediaUploader({
     media = [],
     onMediaChange,
     maxItems = 8,
-    // bucketName prop is no longer used but kept for compatibility
     bucketName = 'products'
 }) {
     const [uploading, setUploading] = useState(false);
     const [dragOver, setDragOver] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Cloudinary Configuration
-    const CLOUD_NAME = 'dcwdrwemm';
-    const UPLOAD_PRESET = 'eticaret';
-    const FOLDER_NAME = 'products'; // Optional: Organize files in a folder
-
     const isVideo = (url) => {
         const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
-        return videoExtensions.some(ext => url.toLowerCase().includes(ext)) || url.includes('/video/upload/');
+        return videoExtensions.some(ext => url.toLowerCase().includes(ext)) || url.includes('/video/') || url.includes('type=video');
     };
 
     const uploadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', UPLOAD_PRESET);
-        formData.append('folder', FOLDER_NAME);
 
-        // Determine correct endpoint based on file type
-        const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
-        const endpoint = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`;
+        // For images, use our new local optimization API
+        // For videos, we'll use a similar path but handle differently if needed
+        const isVideoFile = file.type.startsWith('video/');
+        const endpoint = isVideoFile ? '/api/image/upload' : '/api/image/upload'; // Using same for now as handler handles both or we'll update it
 
         try {
             const response = await fetch(endpoint, {
@@ -43,20 +36,21 @@ export default function MediaUploader({
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Upload failed');
+                throw new Error(errorData.error || 'Upload failed');
             }
 
             const data = await response.json();
-            return data.secure_url;
+            return data.url; // This will be /api/image/filename
         } catch (error) {
-            console.error('Cloudinary upload error:', error);
+            console.error('Upload error:', error);
             throw error;
         }
     };
 
-    const compressImage = async (file) => {
-        // Sadece resimler için ve 9MB üzeri dosyalar için sıkıştırma uygula
-        if (!file.type.startsWith('image/') || file.size < 9 * 1024 * 1024) {
+    const compressImageSize = async (file) => {
+        // Client-side compression for very large images (> 12MB) to speed up upload phase
+        // The server will still optimize further with Sharp
+        if (!file.type.startsWith('image/') || file.size < 12 * 1024 * 1024) {
             return file;
         }
 
@@ -67,12 +61,9 @@ export default function MediaUploader({
             img.onload = () => {
                 URL.revokeObjectURL(url);
                 const canvas = document.createElement('canvas');
-
-                // Boyutları koru (veya gerekirse küçült)
-                // Eğer 4000px'den genişse, 4000px'e çek (yine de çok yüksek çözünürlük)
                 let width = img.width;
                 let height = img.height;
-                const MAX_DIMENSION = 4000;
+                const MAX_DIMENSION = 4096;
 
                 if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
                     const ratio = Math.max(width / MAX_DIMENSION, height / MAX_DIMENSION);
@@ -82,23 +73,20 @@ export default function MediaUploader({
 
                 canvas.width = width;
                 canvas.height = height;
-
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // JPEG olarak, 0.85 kalitesinde kaydet (Gözle görülmez kayıp, büyük boyut kazancı)
                 canvas.toBlob((blob) => {
                     if (blob) {
                         const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
                             type: 'image/jpeg',
                             lastModified: Date.now(),
                         });
-                        console.log(`Otomatik sıkıştırma: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(newFile.size / 1024 / 1024).toFixed(2)}MB`);
                         resolve(newFile);
                     } else {
-                        reject(new Error('Canvas to Blob conversion failed'));
+                        reject(new Error('Canvas conversion failed'));
                     }
-                }, 'image/jpeg', 0.85);
+                }, 'image/jpeg', 0.9); // High quality for initial upload
             };
 
             img.onerror = (error) => {
@@ -120,7 +108,6 @@ export default function MediaUploader({
         setUploading(true);
         const newMedia = [...media];
         let completed = 0;
-        let hasError = false;
 
         try {
             for (const originalFile of files) {
@@ -134,20 +121,8 @@ export default function MediaUploader({
 
                 let fileToUpload = originalFile;
 
-                // Client-side compression for large images
-                if (isImageFile && originalFile.size > 9 * 1024 * 1024) {
-                    try {
-                        fileToUpload = await compressImage(originalFile);
-                    } catch (compressionError) {
-                        console.warn('Sıkıştırma başarısız, orijinal dosya denenecek:', compressionError);
-                    }
-                }
-
-                // Cloudinary limit check (Final check)
-                const maxSize = isVideoFile ? 95 * 1024 * 1024 : 10.4 * 1024 * 1024; // 10.4MB ~ biraz pay bırakalım
-                if (fileToUpload.size > maxSize) {
-                    alert(`${originalFile.name}: Dosya boyutu sıkıştırmaya rağmen çok büyük. (Max: 10MB)`);
-                    continue;
+                if (isImageFile) {
+                    fileToUpload = await compressImageSize(originalFile);
                 }
 
                 try {
@@ -158,7 +133,6 @@ export default function MediaUploader({
                 } catch (err) {
                     console.error(`Error uploading ${originalFile.name}:`, err);
                     alert(`${originalFile.name} yüklenemedi: ${err.message}`);
-                    hasError = true;
                 }
             }
 
@@ -190,8 +164,6 @@ export default function MediaUploader({
     };
 
     const removeMedia = (index) => {
-        // Cloudinary delete requires API signature (backend), so we only remove from UI/DB for now.
-        // Unused files will remain in Cloudinary (free storage is generous)
         const newMedia = media.filter((_, i) => i !== index);
         onMediaChange(newMedia);
     };
@@ -201,7 +173,6 @@ export default function MediaUploader({
 
     return (
         <div className="space-y-4">
-            {/* Upload Area */}
             <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
@@ -212,7 +183,7 @@ export default function MediaUploader({
                 {uploading ? (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Loader2 className="w-8 h-8 animate-spin" />
-                        <span>Buluta yükleniyor... {uploadProgress}%</span>
+                        <span>Sisteme yükleniyor... {uploadProgress}%</span>
                     </div>
                 ) : (
                     <label className="cursor-pointer flex flex-col items-center gap-2">
@@ -221,12 +192,12 @@ export default function MediaUploader({
                             <Video className="w-8 h-8 text-muted-foreground" />
                         </div>
                         <span className="text-sm text-muted-foreground">
-                            Görsel veya video sürükleyin veya <span className="text-primary underline">seçin</span>
+                            Görsel/video sürükleyin veya <span className="text-primary underline">seçin</span>
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            Görsel (JPG, PNG, WebP) • Video (MP4, WebM)
+                            JPG, PNG, WebP, AVIF • MP4, WebM
                             <br />
-                            <span className="text-green-600 font-medium">Cloudinary Optimizasyonu Aktif</span>
+                            <span className="text-blue-600 font-medium font-mono text-[10px]">LOCAL OPTIMIZATION ENGINE ACTIVE</span>
                         </span>
                         <input
                             type="file"
@@ -239,11 +210,13 @@ export default function MediaUploader({
                 )}
             </div>
 
-            {/* Media Preview Grid */}
             {media.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {media.map((url, index) => {
                         const isVideoItem = isVideo(url);
+                        // For local preview, we can append low quality parameters if it's our API
+                        const previewUrl = url.includes('/api/image/') ? `${url}?w=400&q=70` : url;
+
                         return (
                             <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden border">
                                 {isVideoItem ? (
@@ -257,14 +230,11 @@ export default function MediaUploader({
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <Play className="w-10 h-10 text-white/80" />
                                         </div>
-                                        <span className="absolute top-2 left-2 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded font-medium z-10">
-                                            VIDEO
-                                        </span>
                                     </div>
                                 ) : (
                                     <img
-                                        src={url}
-                                        alt={`Ürün görseli ${index + 1}`}
+                                        src={previewUrl}
+                                        alt={`Görsel ${index + 1}`}
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                     />
@@ -274,14 +244,13 @@ export default function MediaUploader({
                                         type="button"
                                         onClick={() => removeMedia(index)}
                                         className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transform hover:scale-110 transition-all"
-                                        title="Kaldır"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                 </div>
                                 {index === 0 && !isVideoItem && (
-                                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                        Ana Görsel
+                                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">
+                                        VİTRİN
                                     </span>
                                 )}
                             </div>
@@ -290,13 +259,12 @@ export default function MediaUploader({
                 </div>
             )}
 
-            {/* Counter */}
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
                 <span>
-                    {imageCount} görsel, {videoCount} video
+                    {imageCount} GÖRSEL, {videoCount} VİDEO
                 </span>
                 <span>
-                    {media.length} / {maxItems} dosya
+                    {media.length} / {maxItems} DOSYA
                 </span>
             </div>
         </div>

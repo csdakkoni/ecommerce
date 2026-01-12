@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/navigation';
 import { Link } from '@/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { ArrowLeft, Save, Eye } from 'lucide-react';

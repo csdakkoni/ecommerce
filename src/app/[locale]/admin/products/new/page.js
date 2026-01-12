@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from '@/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from '@/navigation';
 import MediaUploader from '@/components/MediaUploader';
 
@@ -11,6 +11,7 @@ export default function NewProductPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [images, setImages] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
@@ -22,6 +23,8 @@ export default function NewProductPage() {
         weight_gsm: '',
         pattern: '',
         usage_areas: '',
+        category_id: '',
+        has_variants: false,
         // i18n fields
         name_en: '',
         description_en: '',
@@ -35,9 +38,21 @@ export default function NewProductPage() {
         care_instructions: '',
     });
 
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    async function fetchCategories() {
+        const { data } = await supabase.from('categories').select('*').order('name');
+        setCategories(data || []);
+    }
+
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
 
         // Auto-generate slug from name
         if (name === 'name') {
@@ -69,8 +84,10 @@ export default function NewProductPage() {
             weight_gsm: formData.weight_gsm ? parseInt(formData.weight_gsm) : null,
             pattern: formData.pattern || null,
             usage_areas: usageAreasArray.length > 0 ? usageAreasArray : null,
+            category_id: formData.category_id || null,
             images: images.length > 0 ? images : null,
             is_active: true,
+            has_variants: formData.has_variants,
             // i18n fields
             name_en: formData.name_en || null,
             description_en: formData.description_en || null,
@@ -84,16 +101,23 @@ export default function NewProductPage() {
             care_instructions: formData.care_instructions || null,
         };
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('products')
-            .insert([productData]);
+            .insert([productData])
+            .select()
+            .single();
 
         if (error) {
             alert('Ürün kaydedilirken hata: ' + error.message);
+            setLoading(false);
         } else {
-            router.push('/admin/products');
+            // If it has variants, redirect to edit page to add them
+            if (formData.has_variants) {
+                router.push(`/admin/products/${data.id}/edit`);
+            } else {
+                router.push('/admin/products');
+            }
         }
-        setLoading(false);
     };
 
     return (
@@ -103,7 +127,21 @@ export default function NewProductPage() {
                 Ürünlere Dön
             </Link>
 
-            <h2 className="text-2xl font-bold mb-6">Yeni Kumaş Ekle</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Yeni Kumaş Ekle</h2>
+                <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="has_variants"
+                            checked={formData.has_variants}
+                            onChange={handleChange}
+                            className="w-4 h-4 rounded text-primary"
+                        />
+                        <span>Varyantlı Ürün</span>
+                    </label>
+                </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Image Upload Section */}
@@ -155,6 +193,21 @@ export default function NewProductPage() {
                                 onChange={handleChange}
                                 placeholder="Ürün hakkında detaylı açıklama..."
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Kategori</label>
+                            <select
+                                name="category_id"
+                                className="w-full border rounded-md p-3 bg-background"
+                                value={formData.category_id}
+                                onChange={handleChange}
+                            >
+                                <option value="">Seçiniz</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>

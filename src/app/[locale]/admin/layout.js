@@ -2,7 +2,7 @@
 
 import { Link } from '@/navigation';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from '@/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import AdminGuard from '@/components/AdminGuard';
 import {
