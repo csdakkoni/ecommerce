@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
     LayoutDashboard, Package, ShoppingCart, FolderTree, Users, LogOut, Menu, X,
-    MessageSquare, Boxes, Tag, Wallet, Truck, Settings, Bell, ChevronDown
+    MessageSquare, Boxes, Tag, Wallet, Truck, Settings, Bell, ChevronDown, FileText
 } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
@@ -52,6 +52,7 @@ export default function AdminLayout({ children }) {
                 { href: '/admin/categories', label: 'Kategoriler', icon: FolderTree },
                 { href: '/admin/customers', label: 'Müşteriler', icon: Users },
                 { href: '/admin/inquiries', label: 'Sorular', icon: MessageSquare },
+                { href: '/admin/pages', label: 'Sayfalar', icon: FileText },
             ]
         },
         {
