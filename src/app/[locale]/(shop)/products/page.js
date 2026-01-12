@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Link } from '@/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabaseClient';
 import { SlidersHorizontal, X, Package } from 'lucide-react';
 
@@ -69,10 +69,8 @@ function ProductListContent() {
 
     const hasActiveFilters = selectedType || selectedPattern || priceRange[0] > 0 || priceRange[1] < 10000;
 
-    // ... imports changed above
     const locale = useLocale();
-
-    // ... existing code ...
+    const t = useTranslations('Products');
 
     const getPriceDisplay = (product) => {
         // Fallback to TR logic if EUR is missing or locale is TR
@@ -103,13 +101,13 @@ function ProductListContent() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
                         {loading ? (
-                            <div className="col-span-3 text-center py-12 text-muted-foreground">Yükleniyor...</div>
+                            <div className="col-span-3 text-center py-12 text-muted-foreground">{t('loading')}</div>
                         ) : sortedProducts.length === 0 ? (
                             <div className="col-span-3 text-center py-12">
                                 <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                                <p className="text-muted-foreground mb-4">Bu kriterlere uygun ürün bulunamadı.</p>
+                                <p className="text-muted-foreground mb-4">{t('noProducts')}</p>
                                 <button onClick={clearFilters} className="btn btn-outline">
-                                    Filtreleri Temizle
+                                    {t('clearFilters')}
                                 </button>
                             </div>
                         ) : (
@@ -161,8 +159,9 @@ function ProductListContent() {
 }
 
 export default function ProductListPage() {
+    const t = useTranslations('Products');
     return (
-        <Suspense fallback={<div className="container py-24 text-center">Yükleniyor...</div>}>
+        <Suspense fallback={<div className="container py-24 text-center">{t('loading')}</div>}>
             <ProductListContent />
         </Suspense>
     );

@@ -5,6 +5,20 @@
     "about": "About",
     "contact": "Contact"
   },
+  "Products": {
+    "loading": "Loading...",
+    "noProducts": "No products found matching your criteria.",
+    "clearFilters": "Clear Filters",
+    "sortBy": "Sort by",
+    "newest": "Newest",
+    "priceLow": "Price: Low to High",
+    "priceHigh": "Price: High to Low",
+    "name": "Name",
+    "filters": "Filters",
+    "fabricType": "Fabric Type",
+    "pattern": "Pattern",
+    "priceRange": "Price Range"
+  },
   "Product": {
     "addToCart": "Add to Cart",
     "price": "Price",

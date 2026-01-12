@@ -5,6 +5,20 @@
         "about": "Hakkımızda",
         "contact": "İletişim"
     },
+    "Products": {
+        "loading": "Yükleniyor...",
+        "noProducts": "Bu kriterlere uygun ürün bulunamadı.",
+        "clearFilters": "Filtreleri Temizle",
+        "sortBy": "Sırala",
+        "newest": "En Yeni",
+        "priceLow": "Fiyat: Düşükten Yükseğe",
+        "priceHigh": "Fiyat: Yüsekten Düşüğe",
+        "name": "İsim",
+        "filters": "Filtreler",
+        "fabricType": "Kumaş Tipi",
+        "pattern": "Desen",
+        "priceRange": "Fiyat Aralığı"
+    },
     "Product": {
         "addToCart": "Sepete Ekle",
         "price": "Fiyat",
