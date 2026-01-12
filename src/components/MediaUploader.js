@@ -8,35 +8,50 @@ export default function MediaUploader({
     media = [],
     onMediaChange,
     maxItems = 8,
+    // bucketName prop is no longer used but kept for compatibility
     bucketName = 'products'
 }) {
     const [uploading, setUploading] = useState(false);
     const [dragOver, setDragOver] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
+    // Cloudinary Configuration
+    const CLOUD_NAME = 'dcwdrwemm';
+    const UPLOAD_PRESET = 'eticaret';
+    const FOLDER_NAME = 'products'; // Optional: Organize files in a folder
+
     const isVideo = (url) => {
         const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
-        return videoExtensions.some(ext => url.toLowerCase().includes(ext));
+        return videoExtensions.some(ext => url.toLowerCase().includes(ext)) || url.includes('/video/upload/');
     };
 
     const uploadFile = async (file) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET);
+        formData.append('folder', FOLDER_NAME);
 
-        const { error: uploadError } = await supabase.storage
-            .from(bucketName)
-            .upload(filePath, file);
+        // Determine correct endpoint based on file type
+        const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+        const endpoint = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`;
 
-        if (uploadError) {
-            throw uploadError;
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Upload failed');
+            }
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error('Cloudinary upload error:', error);
+            throw error;
         }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(filePath);
-
-        return publicUrl;
     };
 
     const handleFileSelect = async (files) => {
@@ -49,6 +64,7 @@ export default function MediaUploader({
         setUploading(true);
         const newMedia = [...media];
         let completed = 0;
+        let hasError = false;
 
         try {
             for (const file of files) {
@@ -60,22 +76,31 @@ export default function MediaUploader({
                     continue;
                 }
 
-                // Size limits
-                const maxSize = isVideoFile ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB video, 5MB image
+                // Cloudinary limitleri daha esnek ama yine de çok büyük dosyaları uyaralım
+                // Free plan: Image ~10MB, Video ~100MB
+                const maxSize = isVideoFile ? 95 * 1024 * 1024 : 10 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`${isVideoFile ? 'Video' : 'Görsel'} boyutu ${isVideoFile ? '50MB' : '5MB'}'dan küçük olmalıdır.`);
+                    alert(`${file.name}: Dosya boyutu çok büyük. (Max: ${isVideoFile ? '95MB' : '10MB'})`);
                     continue;
                 }
 
-                const url = await uploadFile(file);
-                newMedia.push(url);
-                completed++;
-                setUploadProgress(Math.round((completed / files.length) * 100));
+                try {
+                    const url = await uploadFile(file);
+                    newMedia.push(url);
+                    completed++;
+                    setUploadProgress(Math.round((completed / files.length) * 100));
+                } catch (err) {
+                    console.error(`Error uploading ${file.name}:`, err);
+                    alert(`${file.name} yüklenemedi: ${err.message}`);
+                    hasError = true;
+                }
             }
-            onMediaChange(newMedia);
+
+            if (completed > 0) {
+                onMediaChange(newMedia);
+            }
         } catch (error) {
-            console.error('Upload error:', error);
-            alert('Dosya yüklenirken hata oluştu: ' + error.message);
+            console.error('Upload process error:', error);
         } finally {
             setUploading(false);
             setUploadProgress(0);
@@ -98,19 +123,9 @@ export default function MediaUploader({
         setDragOver(false);
     };
 
-    const removeMedia = async (index) => {
-        const mediaUrl = media[index];
-        const urlParts = mediaUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-
-        try {
-            await supabase.storage
-                .from(bucketName)
-                .remove([fileName]);
-        } catch (error) {
-            console.error('Delete error:', error);
-        }
-
+    const removeMedia = (index) => {
+        // Cloudinary delete requires API signature (backend), so we only remove from UI/DB for now.
+        // Unused files will remain in Cloudinary (free storage is generous)
         const newMedia = media.filter((_, i) => i !== index);
         onMediaChange(newMedia);
     };
@@ -131,7 +146,7 @@ export default function MediaUploader({
                 {uploading ? (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Loader2 className="w-8 h-8 animate-spin" />
-                        <span>Yükleniyor... {uploadProgress}%</span>
+                        <span>Buluta yükleniyor... {uploadProgress}%</span>
                     </div>
                 ) : (
                     <label className="cursor-pointer flex flex-col items-center gap-2">
@@ -143,7 +158,9 @@ export default function MediaUploader({
                             Görsel veya video sürükleyin veya <span className="text-primary underline">seçin</span>
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            Görsel: PNG, JPG, WebP (Max 5MB) • Video: MP4, WebM (Max 50MB)
+                            Görsel (JPG, PNG, WebP) • Video (MP4, WebM)
+                            <br />
+                            <span className="text-green-600 font-medium">Cloudinary Optimizasyonu Aktif</span>
                         </span>
                         <input
                             type="file"
@@ -162,19 +179,19 @@ export default function MediaUploader({
                     {media.map((url, index) => {
                         const isVideoItem = isVideo(url);
                         return (
-                            <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden">
+                            <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden border">
                                 {isVideoItem ? (
-                                    <div className="relative w-full h-full">
+                                    <div className="relative w-full h-full bg-black">
                                         <video
                                             src={url}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover opacity-80"
                                             muted
                                             preload="metadata"
                                         />
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                            <Play className="w-10 h-10 text-white" />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Play className="w-10 h-10 text-white/80" />
                                         </div>
-                                        <span className="absolute top-2 left-2 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded font-medium">
+                                        <span className="absolute top-2 left-2 bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded font-medium z-10">
                                             VIDEO
                                         </span>
                                     </div>
@@ -183,15 +200,19 @@ export default function MediaUploader({
                                         src={url}
                                         alt={`Ürün görseli ${index + 1}`}
                                         className="w-full h-full object-cover"
+                                        loading="lazy"
                                     />
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={() => removeMedia(index)}
-                                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeMedia(index)}
+                                        className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transform hover:scale-110 transition-all"
+                                        title="Kaldır"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
                                 {index === 0 && !isVideoItem && (
                                     <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                                         Ana Görsel
