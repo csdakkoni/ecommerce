@@ -35,8 +35,17 @@ export default function MediaUploader({
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Upload failed');
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Upload failed');
+                } else {
+                    const text = await response.text();
+                    if (text.includes('Request Entity Too Large') || response.status === 413) {
+                        throw new Error('Dosya boyutu çok büyük (4MB sınırı). Lütfen daha küçük bir dosya yükleyin.');
+                    }
+                    throw new Error(`Yükleme hatası (${response.status})`);
+                }
             }
 
             const data = await response.json();
@@ -48,9 +57,8 @@ export default function MediaUploader({
     };
 
     const compressImageSize = async (file) => {
-        // Client-side compression for very large images (> 12MB) to speed up upload phase
-        // The server will still optimize further with Sharp
-        if (!file.type.startsWith('image/') || file.size < 12 * 1024 * 1024) {
+        // Client-side compression for images > 4MB (Safe limit for Vercel and many servers)
+        if (!file.type.startsWith('image/') || file.size < 4 * 1024 * 1024) {
             return file;
         }
 
