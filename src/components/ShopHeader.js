@@ -126,9 +126,17 @@ export default function ShopHeader() {
                                                 <>
                                                     <div className="px-4 py-2 border-b">
                                                         <p className="text-sm font-medium truncate">{user.email}</p>
+                                                        {user.user_metadata?.role === 'admin' && (
+                                                            <span className="text-xs text-primary">Admin</span>
+                                                        )}
                                                     </div>
+                                                    {user.user_metadata?.role === 'admin' && (
+                                                        <Link href="/admin" className="block px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10" onClick={() => setUserMenuOpen(false)}>
+                                                            🛠️ Admin Panel
+                                                        </Link>
+                                                    )}
                                                     <Link href="/account" className="block px-4 py-2 text-sm hover:bg-muted" onClick={() => setUserMenuOpen(false)}>
-                                                        {t('home')} {/* Fallback generic text or translation */}
+                                                        Hesabım
                                                     </Link>
                                                     <Link href="/account/orders" className="block px-4 py-2 text-sm hover:bg-muted" onClick={() => setUserMenuOpen(false)}>
                                                         Siparişlerim
