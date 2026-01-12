@@ -44,22 +44,29 @@ export default function CartPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-2 space-y-6">
                     {cart.map((item) => (
-                        <div key={`${item.id}-${item.variantId}`} className="flex gap-6 p-4 border rounded-lg">
+                        <div key={`${item.id}-${item.variantId}-${item.optionsKey || ''}`} className="flex gap-6 p-4 border rounded-lg">
                             <div className="w-24 h-24 bg-gray-100 dark:bg-zinc-900 rounded-md overflow-hidden flex-shrink-0">
-                                <div className="w-full h-full bg-gray-200 dark:bg-zinc-800"></div>
+                                {item.image ? (
+                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-200 dark:bg-zinc-800"></div>
+                                )}
                             </div>
                             <div className="flex-1 flex flex-col justify-between">
                                 <div>
                                     <div className="flex justify-between items-start">
-                                        <h3 className="font-bold">{item.name}</h3>
+                                        <h3 className="font-bold">{locale === 'en' && item.name_en ? item.name_en : item.name}</h3>
                                         <button
-                                            onClick={() => removeFromCart(item.id, item.variantId)}
+                                            onClick={() => removeFromCart(item.id, item.variantId, item.optionsKey)}
                                             className="text-gray-400 hover:text-red-500"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
                                     {item.variantName && <p className="text-sm text-gray-500">{item.variantName}</p>}
+                                    {item.optionsDisplay && (
+                                        <p className="text-sm text-primary mt-1">{item.optionsDisplay}</p>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-end">
                                     <div className="text-sm text-gray-500">

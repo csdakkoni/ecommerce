@@ -10,6 +10,7 @@ import { Share2, Heart, MessageCircle, Truck, Shield, RefreshCw, Ruler, Package,
 import ProductInquiryModal from '@/components/ProductInquiryModal';
 import MetreSelector from '@/components/MetreSelector';
 import SampleRequestModal from '@/components/SampleRequestModal';
+import ProductOptions from '@/components/ProductOptions';
 
 export default function ProductDetailPage({ params }) {
     const resolvedParams = use(params);
@@ -23,7 +24,9 @@ export default function ProductDetailPage({ params }) {
     const [selectedImage, setSelectedImage] = useState(0);
     const [inquiryOpen, setInquiryOpen] = useState(false);
     const [sampleRequestOpen, setSampleRequestOpen] = useState(false);
-
+    const [optionGroups, setOptionGroups] = useState([]);
+    const [selectedOptions, setSelectedOptions] = useState({});
+    const [calculatedPrice, setCalculatedPrice] = useState(null);
 
     const { addToCart } = useCart();
     const { isFavorite, toggleFavorite } = useFavorites();
@@ -37,8 +40,53 @@ export default function ProductDetailPage({ params }) {
                 .eq('id', id)
                 .single();
 
-            if (error) console.error(error);
-            else setProduct(data);
+            if (error) {
+                console.error(error);
+                setLoading(false);
+                return;
+            }
+
+            setProduct(data);
+
+            // Fetch option groups if product has variants
+            if (data?.has_variants) {
+                const { data: groups, error: groupsError } = await supabase
+                    .from('product_option_groups')
+                    .select(`
+                        *,
+                        values:product_option_values(*)
+                    `)
+                    .eq('product_id', id)
+                    .order('sort_order', { ascending: true });
+
+                if (!groupsError && groups) {
+                    // Sort values within each group
+                    const sortedGroups = groups.map(group => ({
+                        ...group,
+                        values: (group.values || []).sort((a, b) =>
+                            (a.sort_order || 0) - (b.sort_order || 0)
+                        )
+                    }));
+                    setOptionGroups(sortedGroups);
+
+                    // Set default selections
+                    const defaults = {};
+                    sortedGroups.forEach(group => {
+                        const defaultValue = group.values?.find(v => v.is_default && v.is_available);
+                        if (defaultValue) {
+                            defaults[group.id] = defaultValue.id;
+                        } else if (group.values?.length > 0) {
+                            // If no default, select first available
+                            const firstAvailable = group.values.find(v => v.is_available);
+                            if (firstAvailable) {
+                                defaults[group.id] = firstAvailable.id;
+                            }
+                        }
+                    });
+                    setSelectedOptions(defaults);
+                }
+            }
+
             setLoading(false);
         }
         if (id) fetchProduct();
@@ -62,9 +110,45 @@ export default function ProductDetailPage({ params }) {
 
     const { amount, saleAmount, currency } = getPriceDisplay();
 
+    // Get the final price (considering variants if any)
+    const getFinalPrice = () => {
+        if (calculatedPrice?.finalPrice) {
+            return calculatedPrice.finalPrice;
+        }
+        return saleAmount || amount;
+    };
+
+    const handleOptionChange = (groupId, valueId) => {
+        setSelectedOptions(prev => ({
+            ...prev,
+            [groupId]: valueId
+        }));
+    };
+
     const handleAddToCart = () => {
-        addToCart(product, quantity);
+        // Prepare product with variant info
+        const productWithOptions = {
+            ...product,
+            price: getFinalPrice(),
+            sale_price: null, // Already factored in
+            selected_options: optionGroups.length > 0 ? selectedOptions : null,
+            options_display: optionGroups.length > 0 ? getOptionsDisplayText() : null
+        };
+        addToCart(productWithOptions, quantity);
         toast.success(t('addedToCart'));
+    };
+
+    // Get display text for selected options
+    const getOptionsDisplayText = () => {
+        const parts = [];
+        optionGroups.forEach(group => {
+            const valueId = selectedOptions[group.id];
+            const value = group.values?.find(v => v.id === valueId);
+            if (value) {
+                parts.push(locale === 'en' && value.value_en ? value.value_en : value.value);
+            }
+        });
+        return parts.join(', ');
     };
 
     const handleToggleFavorite = () => {
@@ -138,13 +222,28 @@ export default function ProductDetailPage({ params }) {
                     </div>
                     <h1 className="text-4xl font-bold mb-4">{locale === 'en' && product.name_en ? product.name_en : product.name}</h1>
 
+                    {/* Price Display - Static or Dynamic based on variants */}
                     <div className="text-2xl font-medium mb-2">
-                        {saleAmount ? (
+                        {optionGroups.length > 0 && calculatedPrice ? (
+                            // Variant pricing
+                            <>
+                                <span className={calculatedPrice.finalPrice !== calculatedPrice.basePrice ? 'text-primary' : ''}>
+                                    {calculatedPrice.finalPrice.toFixed(2)} {currency}
+                                </span>
+                                {calculatedPrice.finalPrice !== calculatedPrice.basePrice && (
+                                    <span className="text-sm text-muted-foreground font-normal ml-2">
+                                        ({locale === 'en' ? 'Base' : 'Baz'}: {calculatedPrice.basePrice} {currency})
+                                    </span>
+                                )}
+                            </>
+                        ) : saleAmount ? (
+                            // Sale pricing
                             <>
                                 <span className="text-red-500">{saleAmount} {currency}</span>
                                 <span className="text-lg text-muted-foreground line-through ml-3">{amount} {currency}</span>
                             </>
                         ) : (
+                            // Regular pricing
                             <>{amount} {currency}</>
                         )}
                         <span className="text-sm text-muted-foreground font-normal ml-2">
@@ -190,6 +289,20 @@ export default function ProductDetailPage({ params }) {
                         </div>
                     </div>
 
+                    {/* Product Options / Variants */}
+                    {optionGroups.length > 0 && (
+                        <div className="mb-8">
+                            <ProductOptions
+                                product={product}
+                                optionGroups={optionGroups}
+                                selectedOptions={selectedOptions}
+                                onOptionChange={handleOptionChange}
+                                onPriceChange={setCalculatedPrice}
+                                currency={currency}
+                            />
+                        </div>
+                    )}
+
                     {/* Quantity Selector - MetreSelector for fabric, simple for others */}
                     <div className="mb-6">
                         <MetreSelector
@@ -199,7 +312,7 @@ export default function ProductDetailPage({ params }) {
                             maxQuantity={100}
                             value={quantity}
                             onChange={setQuantity}
-                            price={saleAmount || amount}
+                            price={getFinalPrice()}
                             currency={currency}
                             showPrice={true}
                             size="default"
@@ -211,7 +324,7 @@ export default function ProductDetailPage({ params }) {
                         onClick={handleAddToCart}
                         className="btn btn-primary w-full h-14 text-lg mb-6"
                     >
-                        {t('addToCart')} • {((saleAmount || amount) * quantity).toFixed(2)} {currency}
+                        {t('addToCart')} • {(getFinalPrice() * quantity).toFixed(2)} {currency}
                     </button>
 
                     {/* Secondary Actions */}

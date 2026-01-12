@@ -88,10 +88,11 @@ export default function CheckoutPage() {
         const orderItems = cart.map(item => ({
             order_id: order.id,
             product_id: item.id,
-            product_name: item.name,
-            variant_name: item.variantName,
+            product_name: locale === 'en' && item.name_en ? item.name_en : item.name,
+            variant_name: item.variantName || item.optionsDisplay || null,
             price: item.price,
             quantity: item.quantity,
+            selected_options: item.selectedOptions || null,
         }));
 
         const { error: itemsError } = await supabase
@@ -251,10 +252,15 @@ export default function CheckoutPage() {
 
                         <div className="space-y-4 mb-4 max-h-64 overflow-y-auto">
                             {cart.map((item) => (
-                                <div key={`${item.id}-${item.variantId}`} className="flex gap-3 text-sm">
-                                    <div className="w-12 h-12 bg-muted rounded flex-shrink-0"></div>
+                                <div key={`${item.id}-${item.variantId}-${item.optionsKey || ''}`} className="flex gap-3 text-sm">
+                                    <div className="w-12 h-12 bg-muted rounded flex-shrink-0 overflow-hidden">
+                                        {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
+                                    </div>
                                     <div className="flex-1">
-                                        <p className="font-medium line-clamp-1">{item.name}</p>
+                                        <p className="font-medium line-clamp-1">{locale === 'en' && item.name_en ? item.name_en : item.name}</p>
+                                        {item.optionsDisplay && (
+                                            <p className="text-xs text-primary">{item.optionsDisplay}</p>
+                                        )}
                                         <p className="text-muted-foreground">{item.quantity} x {formatPrice(item.price)}</p>
                                     </div>
                                 </div>

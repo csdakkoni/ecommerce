@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Link } from '@/navigation';
 import MediaUploader from '@/components/MediaUploader';
+import ProductVariantsManager from '@/components/admin/ProductVariantsManager';
 
 export default function EditProductPage({ params }) {
     const resolvedParams = use(params);
@@ -16,6 +17,7 @@ export default function EditProductPage({ params }) {
     const [saving, setSaving] = useState(false);
     const [images, setImages] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [hasVariants, setHasVariants] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
@@ -79,6 +81,7 @@ export default function EditProductPage({ params }) {
             price_eur: data.price_eur?.toString() || '',
         });
         setImages(data.images || []);
+        setHasVariants(data.has_variants || false);
         setLoading(false);
     }
 
@@ -117,6 +120,8 @@ export default function EditProductPage({ params }) {
             description_en: formData.description_en || null,
             price_usd: formData.price_usd ? parseFloat(formData.price_usd) : null,
             price_eur: formData.price_eur ? parseFloat(formData.price_eur) : null,
+            // Variants
+            has_variants: hasVariants,
         };
 
         const { error } = await supabase
@@ -374,6 +379,13 @@ export default function EditProductPage({ params }) {
                         </div>
                     </div>
                 </div>
+
+                {/* Product Variants Section */}
+                <ProductVariantsManager
+                    productId={productId}
+                    hasVariants={hasVariants}
+                    onHasVariantsChange={setHasVariants}
+                />
 
                 <div className="flex justify-end gap-4">
                     <Link href="/admin/products" className="btn btn-outline">İptal</Link>
