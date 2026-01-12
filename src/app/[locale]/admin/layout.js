@@ -101,8 +101,16 @@ export default function AdminLayout({ children }) {
                 {/* Sidebar */}
                 <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-white dark:bg-black border-r border-gray-200 dark:border-zinc-800 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
                     <div className="p-6 border-b border-gray-100 dark:border-zinc-800">
-                        <Link href="/admin" className="text-xl font-bold tracking-tight">
-                            Grohn Fabrics Admin
+                        <Link href="/admin" className="text-xl font-bold tracking-tight block">
+                            Grohn Fabrics
+                        </Link>
+                        <p className="text-xs text-muted-foreground">Admin Panel</p>
+                        <Link
+                            href="/"
+                            className="mt-3 flex items-center gap-2 text-xs text-primary hover:underline"
+                            target="_blank"
+                        >
+                            🌐 Siteyi Görüntüle →
                         </Link>
                     </div>
 
