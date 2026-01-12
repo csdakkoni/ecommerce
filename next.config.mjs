@@ -4,9 +4,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // turbopack: {
-  //   root: '/Users/erdemaslan/.gemini/antigravity/scratch/agoraloom-ecommerce',
-  // },
+  // Exclude iyzipay from bundling (uses dynamic require)
+  serverExternalPackages: ['iyzipay'],
   images: {
     remotePatterns: [
       {
