@@ -54,6 +54,62 @@ export default function MediaUploader({
         }
     };
 
+    const compressImage = async (file) => {
+        // Sadece resimler için ve 9MB üzeri dosyalar için sıkıştırma uygula
+        if (!file.type.startsWith('image/') || file.size < 9 * 1024 * 1024) {
+            return file;
+        }
+
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const canvas = document.createElement('canvas');
+
+                // Boyutları koru (veya gerekirse küçült)
+                // Eğer 4000px'den genişse, 4000px'e çek (yine de çok yüksek çözünürlük)
+                let width = img.width;
+                let height = img.height;
+                const MAX_DIMENSION = 4000;
+
+                if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                    const ratio = Math.max(width / MAX_DIMENSION, height / MAX_DIMENSION);
+                    width /= ratio;
+                    height /= ratio;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // JPEG olarak, 0.85 kalitesinde kaydet (Gözle görülmez kayıp, büyük boyut kazancı)
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        console.log(`Otomatik sıkıştırma: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(newFile.size / 1024 / 1024).toFixed(2)}MB`);
+                        resolve(newFile);
+                    } else {
+                        reject(new Error('Canvas to Blob conversion failed'));
+                    }
+                }, 'image/jpeg', 0.85);
+            };
+
+            img.onerror = (error) => {
+                reject(error);
+                URL.revokeObjectURL(url);
+            };
+
+            img.src = url;
+        });
+    };
+
     const handleFileSelect = async (files) => {
         if (!files || files.length === 0) return;
         if (media.length + files.length > maxItems) {
@@ -67,32 +123,41 @@ export default function MediaUploader({
         let hasError = false;
 
         try {
-            for (const file of files) {
-                const isVideoFile = file.type.startsWith('video/');
-                const isImageFile = file.type.startsWith('image/');
+            for (const originalFile of files) {
+                const isVideoFile = originalFile.type.startsWith('video/');
+                const isImageFile = originalFile.type.startsWith('image/');
 
                 if (!isImageFile && !isVideoFile) {
                     alert('Sadece görsel ve video dosyaları yükleyebilirsiniz.');
                     continue;
                 }
 
-                // Cloudinary limitleri (Koddaki limiti artırıyorum)
-                // Free plan default: Image ~10MB olabilir, Settings > Security altından arttırılabilir.
-                // Biz limiti 30MB yapalım.
-                const maxSize = isVideoFile ? 95 * 1024 * 1024 : 30 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    alert(`${file.name}: Dosya boyutu çok büyük. (Max: ${isVideoFile ? '95MB' : '30MB'})`);
+                let fileToUpload = originalFile;
+
+                // Client-side compression for large images
+                if (isImageFile && originalFile.size > 9 * 1024 * 1024) {
+                    try {
+                        fileToUpload = await compressImage(originalFile);
+                    } catch (compressionError) {
+                        console.warn('Sıkıştırma başarısız, orijinal dosya denenecek:', compressionError);
+                    }
+                }
+
+                // Cloudinary limit check (Final check)
+                const maxSize = isVideoFile ? 95 * 1024 * 1024 : 10.4 * 1024 * 1024; // 10.4MB ~ biraz pay bırakalım
+                if (fileToUpload.size > maxSize) {
+                    alert(`${originalFile.name}: Dosya boyutu sıkıştırmaya rağmen çok büyük. (Max: 10MB)`);
                     continue;
                 }
 
                 try {
-                    const url = await uploadFile(file);
+                    const url = await uploadFile(fileToUpload);
                     newMedia.push(url);
                     completed++;
                     setUploadProgress(Math.round((completed / files.length) * 100));
                 } catch (err) {
-                    console.error(`Error uploading ${file.name}:`, err);
-                    alert(`${file.name} yüklenemedi: ${err.message}`);
+                    console.error(`Error uploading ${originalFile.name}:`, err);
+                    alert(`${originalFile.name} yüklenemedi: ${err.message}`);
                     hasError = true;
                 }
             }
