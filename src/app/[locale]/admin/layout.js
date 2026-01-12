@@ -55,6 +55,8 @@ export default function AdminLayout({ children }) {
                 { href: '/admin/customers', label: 'Müşteriler', icon: Users },
                 { href: '/admin/inquiries', label: 'Sorular', icon: MessageSquare },
                 { href: '/admin/pages', label: 'Sayfalar', icon: FileText },
+                { href: '/admin/blog', label: 'Blog', icon: FileText },
+                { href: '/admin/samples', label: 'Numune Talepleri', icon: Package },
             ]
         },
         {
