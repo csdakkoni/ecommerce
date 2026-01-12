@@ -76,11 +76,12 @@ export default function MediaUploader({
                     continue;
                 }
 
-                // Cloudinary limitleri daha esnek ama yine de çok büyük dosyaları uyaralım
-                // Free plan: Image ~10MB, Video ~100MB
-                const maxSize = isVideoFile ? 95 * 1024 * 1024 : 10 * 1024 * 1024;
+                // Cloudinary limitleri (Koddaki limiti artırıyorum)
+                // Free plan default: Image ~10MB olabilir, Settings > Security altından arttırılabilir.
+                // Biz limiti 30MB yapalım.
+                const maxSize = isVideoFile ? 95 * 1024 * 1024 : 30 * 1024 * 1024;
                 if (file.size > maxSize) {
-                    alert(`${file.name}: Dosya boyutu çok büyük. (Max: ${isVideoFile ? '95MB' : '10MB'})`);
+                    alert(`${file.name}: Dosya boyutu çok büyük. (Max: ${isVideoFile ? '95MB' : '30MB'})`);
                     continue;
                 }
 
