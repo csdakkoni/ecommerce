@@ -9,7 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import {
     Share2, Heart, MessageCircle, Truck, Shield, RefreshCw,
     Ruler, Package, Scissors, Maximize2, X, ChevronLeft, ChevronRight,
-    AlertCircle
+    AlertCircle, Check
 } from 'lucide-react';
 import ProductInquiryModal from '@/components/ProductInquiryModal';
 import MetreSelector from '@/components/MetreSelector';
@@ -403,6 +403,7 @@ export default function ProductDetailPage({ params }) {
                 </div>
             </div>
 
+            <ProductInquiryModal product={product} isOpen={inquiryOpen} onClose={() => setInquiryOpen(false)} />
             <ProductInquiryModal product={product} isOpen={inquiryOpen} onClose={() => setInquiryOpen(false)} />
             <SampleRequestModal product={product} isOpen={sampleRequestOpen} onClose={() => setSampleRequestOpen(false)} />
 
