@@ -5,7 +5,7 @@ import { Link } from '@/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
     Package, ShoppingCart, Users, TrendingUp, ChevronRight, Clock,
-    AlertTriangle, DollarSign, ArrowUp, ArrowDown, Boxes, Tag
+    AlertTriangle, DollarSign, ArrowUp, ArrowDown, Boxes, Tag, MessageSquare
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -44,6 +44,7 @@ export default function AdminDashboard() {
         todayRevenue: 0,
         todayOrders: 0,
         totalCustomers: 0,
+        pendingInquiries: 0,
     });
     const [recentOrders, setRecentOrders] = useState([]);
     const [topProducts, setTopProducts] = useState([]);
@@ -153,15 +154,19 @@ export default function AdminDashboard() {
 
         setTopProducts(topProductsList);
 
-        // Fetch low stock variants
-        const { data: variants } = await supabase
-            .from('variants')
-            .select('id, name, stock_quantity, product_id, products(name)')
-            .lt('stock_quantity', 10)
-            .order('stock_quantity', { ascending: true })
-            .limit(5);
-
         setLowStockProducts(variants || []);
+
+        // Fetch pending inquiries count
+        const { count: pendingInquiriesCount } = await supabase
+            .from('inquiries')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pending');
+
+        setStats(prev => ({
+            ...prev,
+            pendingInquiries: pendingInquiriesCount || 0
+        }));
+
         setLoading(false);
     }
 
@@ -220,6 +225,14 @@ export default function AdminDashboard() {
             subtitle: 'Aktif ürün',
             icon: Package,
             color: 'bg-violet-500'
+        },
+        {
+            title: 'Bekleyen Sorular',
+            value: stats.pendingInquiries.toString(),
+            subtitle: 'Yanıt bekliyor',
+            icon: MessageSquare,
+            color: 'bg-indigo-500',
+            highlight: stats.pendingInquiries > 0
         },
     ];
 
@@ -314,7 +327,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {statCards.map((stat, i) => {
                     const Icon = stat.icon;
                     return (

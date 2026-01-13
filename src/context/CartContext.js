@@ -55,10 +55,12 @@ export function CartProvider({ children }) {
             ? JSON.stringify(product.selected_options)
             : null;
 
+        const variantId = variant?.id || product.selected_variant_id || null;
+
         setCart(prev => {
             const existingItem = prev.find(item =>
                 item.id === product.id &&
-                item.variantId === (variant?.id || null) &&
+                item.variantId === variantId &&
                 item.optionsKey === optionsKey
             );
 
@@ -66,7 +68,7 @@ export function CartProvider({ children }) {
                 // Update existing item quantity
                 return prev.map(item =>
                     (item.id === product.id &&
-                        item.variantId === (variant?.id || null) &&
+                        item.variantId === variantId &&
                         item.optionsKey === optionsKey)
                         ? { ...item, quantity: parseFloat((item.quantity + qty).toFixed(2)) }
                         : item
@@ -82,8 +84,8 @@ export function CartProvider({ children }) {
                 originalPrice: parseFloat(product.price),
                 price_eur: product.price_eur ? parseFloat(product.sale_price_eur || product.price_eur) : null,
                 image: product.images?.[0] || null,
-                variantId: variant?.id || null,
-                variantName: variant?.name || null,
+                variantId: variantId,
+                variantName: variant?.name || product.variant_name || null,
                 quantity: qty,
                 // Textile-specific fields
                 unitType: product.unit_type || 'adet',

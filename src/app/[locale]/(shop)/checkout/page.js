@@ -88,6 +88,7 @@ export default function CheckoutPage() {
         const orderItems = cart.map(item => ({
             order_id: order.id,
             product_id: item.id,
+            variant_id: item.variantId || null,
             product_name: locale === 'en' && item.name_en ? item.name_en : item.name,
             variant_name: item.variantName || item.optionsDisplay || null,
             price: item.price,
@@ -252,7 +253,7 @@ export default function CheckoutPage() {
 
                         <div className="space-y-4 mb-4 max-h-64 overflow-y-auto">
                             {cart.map((item) => (
-                                <div key={`${item.id}-${item.variantId}-${item.optionsKey || ''}`} className="flex gap-3 text-sm">
+                                <div key={`${item.id}-${item.variantId || 'base'}-${item.optionsKey || ''}`} className="flex gap-3 text-sm">
                                     <div className="w-12 h-12 bg-muted rounded flex-shrink-0 overflow-hidden">
                                         {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
                                     </div>

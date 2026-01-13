@@ -27,13 +27,12 @@ export default function StockManagement() {
                 id,
                 name,
                 is_active,
-                variants (
+                product_variants (
                     id,
-                    name,
-                    color_code,
-                    stock_quantity,
+                    option_combination,
+                    stock,
                     sku,
-                    low_stock_threshold
+                    is_available
                 )
             `)
             .order('name');
@@ -44,27 +43,37 @@ export default function StockManagement() {
         setLoading(false);
     }
 
+    const getVariantName = (variant) => {
+        if (!variant.option_combination) return 'Varsayılan';
+        return Object.entries(variant.option_combination)
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(', ');
+    };
+
     const filteredProducts = products.filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase()) ||
-            product.variants?.some(v => v.name?.toLowerCase().includes(search.toLowerCase()) || v.sku?.toLowerCase().includes(search.toLowerCase()));
+            product.product_variants?.some(v =>
+                getVariantName(v).toLowerCase().includes(search.toLowerCase()) ||
+                v.sku?.toLowerCase().includes(search.toLowerCase())
+            );
 
         if (!matchesSearch) return false;
 
         if (filter === 'all') return true;
         if (filter === 'low') {
-            return product.variants?.some(v => v.stock_quantity > 0 && v.stock_quantity <= (v.low_stock_threshold || 5));
+            return product.product_variants?.some(v => v.stock > 0 && v.stock <= 5);
         }
         if (filter === 'out') {
-            return product.variants?.some(v => v.stock_quantity <= 0);
+            return product.product_variants?.some(v => v.stock <= 0);
         }
         return true;
     });
 
-    const totalVariants = products.reduce((sum, p) => sum + (p.variants?.length || 0), 0);
+    const totalVariants = products.reduce((sum, p) => sum + (p.product_variants?.length || 0), 0);
     const lowStockCount = products.reduce((sum, p) =>
-        sum + (p.variants?.filter(v => v.stock_quantity > 0 && v.stock_quantity <= (v.low_stock_threshold || 5)).length || 0), 0);
+        sum + (p.product_variants?.filter(v => v.stock > 0 && v.stock <= 5).length || 0), 0);
     const outOfStockCount = products.reduce((sum, p) =>
-        sum + (p.variants?.filter(v => v.stock_quantity <= 0).length || 0), 0);
+        sum + (p.product_variants?.filter(v => v.stock <= 0).length || 0), 0);
 
     const openAdjustment = (variant, type) => {
         setSelectedVariant(variant);
@@ -78,13 +87,13 @@ export default function StockManagement() {
         if (!selectedVariant || adjustmentQty <= 0) return;
 
         const newQty = adjustmentType === 'in'
-            ? selectedVariant.stock_quantity + adjustmentQty
-            : Math.max(0, selectedVariant.stock_quantity - adjustmentQty);
+            ? selectedVariant.stock + adjustmentQty
+            : Math.max(0, selectedVariant.stock - adjustmentQty);
 
         // Update variant stock
         const { error } = await supabase
-            .from('variants')
-            .update({ stock_quantity: newQty })
+            .from('product_variants')
+            .update({ stock: newQty })
             .eq('id', selectedVariant.id);
 
         if (!error) {
@@ -108,11 +117,11 @@ export default function StockManagement() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-bold flex items-center gap-2 text-purple-700 dark:text-purple-300">
                         <Boxes className="w-7 h-7" />
                         Stok Yönetimi
                     </h1>
-                    <p className="text-muted-foreground">Ürün stoklarını takip edin ve yönetin</p>
+                    <p className="text-muted-foreground">Ürün varyant stoklarını takip edin ve yönetin</p>
                 </div>
                 <button
                     onClick={fetchProducts}
@@ -182,8 +191,8 @@ export default function StockManagement() {
                             key={f.value}
                             onClick={() => setFilter(f.value)}
                             className={`px-4 py-2 text-sm rounded-lg transition-colors ${filter === f.value
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted hover:bg-muted/80'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted hover:bg-muted/80'
                                 }`}
                         >
                             {f.label}
@@ -206,7 +215,7 @@ export default function StockManagement() {
                             <thead className="bg-muted/50">
                                 <tr>
                                     <th className="text-left p-4 font-medium">Ürün</th>
-                                    <th className="text-left p-4 font-medium">Varyant</th>
+                                    <th className="text-left p-4 font-medium">Varyant Kombinasyonu</th>
                                     <th className="text-left p-4 font-medium">SKU</th>
                                     <th className="text-center p-4 font-medium">Stok</th>
                                     <th className="text-center p-4 font-medium">Durum</th>
@@ -215,22 +224,24 @@ export default function StockManagement() {
                             </thead>
                             <tbody className="divide-y">
                                 {filteredProducts.map(product => (
-                                    product.variants?.map((variant, vi) => (
+                                    product.product_variants?.map((variant, vi) => (
                                         <tr key={variant.id} className="hover:bg-muted/30">
                                             <td className="p-4">
                                                 {vi === 0 && (
-                                                    <span className="font-medium">{product.name}</span>
+                                                    <span className="font-bold">{product.name}</span>
                                                 )}
                                             </td>
                                             <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    {variant.color_code && (
-                                                        <div
-                                                            className="w-5 h-5 rounded-full border"
-                                                            style={{ backgroundColor: variant.color_code }}
-                                                        />
+                                                <div className="flex flex-wrap gap-1">
+                                                    {variant.option_combination ? (
+                                                        Object.entries(variant.option_combination).map(([group, val]) => (
+                                                            <span key={group} className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] uppercase font-bold border border-purple-200 dark:border-purple-800">
+                                                                {group}: {val}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-muted-foreground italic">Varsayılan</span>
                                                     )}
-                                                    <span>{variant.name}</span>
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -239,20 +250,20 @@ export default function StockManagement() {
                                                 </code>
                                             </td>
                                             <td className="p-4 text-center">
-                                                <span className={`font-bold ${variant.stock_quantity <= 0 ? 'text-red-600' :
-                                                        variant.stock_quantity <= (variant.low_stock_threshold || 5) ? 'text-amber-600' :
-                                                            'text-green-600'
+                                                <span className={`font-bold ${variant.stock <= 0 ? 'text-red-600' :
+                                                    variant.stock <= 5 ? 'text-amber-600' :
+                                                        'text-green-600'
                                                     }`}>
-                                                    {variant.stock_quantity}
+                                                    {variant.stock}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-center">
-                                                {variant.stock_quantity <= 0 ? (
-                                                    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Stokta Yok</span>
-                                                ) : variant.stock_quantity <= (variant.low_stock_threshold || 5) ? (
-                                                    <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Düşük</span>
+                                                {variant.stock <= 0 ? (
+                                                    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-bold">STOKTA YOK</span>
+                                                ) : variant.stock <= 5 ? (
+                                                    <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-bold">DÜŞÜK</span>
                                                 ) : (
-                                                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Yeterli</span>
+                                                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-bold">YETERLİ</span>
                                                 )}
                                             </td>
                                             <td className="p-4">
@@ -268,7 +279,7 @@ export default function StockManagement() {
                                                         onClick={() => openAdjustment(variant, 'out')}
                                                         className="p-2 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
                                                         title="Stok Çıkar"
-                                                        disabled={variant.stock_quantity <= 0}
+                                                        disabled={variant.stock <= 0}
                                                     >
                                                         <Minus className="w-4 h-4" />
                                                     </button>
@@ -293,9 +304,19 @@ export default function StockManagement() {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm text-muted-foreground">Varyant</label>
-                                <p className="font-medium">{selectedVariant.name}</p>
-                                <p className="text-sm text-muted-foreground">Mevcut: {selectedVariant.stock_quantity} adet</p>
+                                <label className="text-sm text-muted-foreground block mb-1">Varyant</label>
+                                <div className="flex flex-wrap gap-1">
+                                    {selectedVariant.option_combination ? (
+                                        Object.entries(selectedVariant.option_combination).map(([group, val]) => (
+                                            <span key={group} className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[9px] uppercase font-bold">
+                                                {group}: {val}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="font-medium">Varsayılan</span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-2">Mevcut: {selectedVariant.stock} adet</p>
                             </div>
 
                             <div>
@@ -322,10 +343,10 @@ export default function StockManagement() {
 
                             <div className="p-3 bg-muted rounded-lg">
                                 <p className="text-sm">
-                                    Yeni stok: <span className="font-bold">
+                                    Yeni stok: <span className="font-bold text-purple-600">
                                         {adjustmentType === 'in'
-                                            ? selectedVariant.stock_quantity + adjustmentQty
-                                            : Math.max(0, selectedVariant.stock_quantity - adjustmentQty)
+                                            ? selectedVariant.stock + adjustmentQty
+                                            : Math.max(0, selectedVariant.stock - adjustmentQty)
                                         }
                                     </span> adet
                                 </p>

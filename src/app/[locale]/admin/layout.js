@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import AdminGuard from '@/components/AdminGuard';
 import {
     LayoutDashboard, Package, ShoppingCart, FolderTree, Users, LogOut, Menu, X,
-    MessageSquare, Boxes, Tag, Wallet, Truck, Settings, Bell, ChevronDown, FileText
+    MessageSquare, Boxes, Tag, Wallet, Truck, Settings, Bell, ChevronDown, FileText, Image
 } from 'lucide-react';
 
 
@@ -57,6 +57,7 @@ export default function AdminLayout({ children }) {
                 { href: '/admin/pages', label: 'Sayfalar', icon: FileText },
                 { href: '/admin/blog', label: 'Blog', icon: FileText },
                 { href: '/admin/samples', label: 'Numune Talepleri', icon: Package },
+                { href: '/admin/media', label: 'Medya', icon: Image },
             ]
         },
         {
