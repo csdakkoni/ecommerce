@@ -18,8 +18,10 @@ import ProductOptions from '@/components/ProductOptions';
 import { getOptimizedImageUrl } from '@/lib/media/utils';
 
 export default function ProductDetailPage({ params }) {
-    const resolvedParams = use(params);
-    const id = resolvedParams.id;
+    // Safety check for params
+    const resolvedParams = params ? (typeof params.then === 'function' ? use(params) : params) : { id: null };
+    const id = resolvedParams?.id;
+
     const t = useTranslations('Product');
     const locale = useLocale();
 
@@ -42,6 +44,8 @@ export default function ProductDetailPage({ params }) {
 
     useEffect(() => {
         async function fetchProduct() {
+            if (!id) return;
+
             const { data, error } = await supabase
                 .from('products')
                 .select('*, product_variants(*)')
@@ -97,7 +101,7 @@ export default function ProductDetailPage({ params }) {
 
             setLoading(false);
         }
-        if (id) fetchProduct();
+        fetchProduct();
     }, [id]);
 
     // Resolve selected variant when options change
@@ -125,7 +129,7 @@ export default function ProductDetailPage({ params }) {
         // Use variant override if available
         if (selectedVariant?.price_override) {
             return {
-                amount: selectedVariant.price_override,
+                amount: parseFloat(selectedVariant.price_override),
                 saleAmount: null,
                 currency: '₺'
             };
@@ -133,14 +137,14 @@ export default function ProductDetailPage({ params }) {
 
         if (locale !== 'tr' && product.price_eur) {
             return {
-                amount: product.price_eur,
-                saleAmount: product.sale_price_eur,
+                amount: parseFloat(product.price_eur),
+                saleAmount: product.sale_price_eur ? parseFloat(product.sale_price_eur) : null,
                 currency: '€'
             };
         }
         return {
-            amount: product.price,
-            saleAmount: product.sale_price,
+            amount: parseFloat(product.price || 0),
+            saleAmount: product.sale_price ? parseFloat(product.sale_price) : null,
             currency: '₺'
         };
     };
@@ -149,10 +153,10 @@ export default function ProductDetailPage({ params }) {
 
     const getFinalPrice = () => {
         if (selectedVariant?.price_override) {
-            return selectedVariant.price_override;
+            return parseFloat(selectedVariant.price_override);
         }
         if (calculatedPrice?.finalPrice) {
-            return calculatedPrice.finalPrice;
+            return parseFloat(calculatedPrice.finalPrice);
         }
         return saleAmount || amount;
     };
@@ -299,7 +303,7 @@ export default function ProductDetailPage({ params }) {
                     {/* Price Display */}
                     <div className="text-2xl font-medium mb-2">
                         {selectedVariant?.price_override ? (
-                            <span className="text-primary">{selectedVariant.price_override.toFixed(2)} {currency}</span>
+                            <span className="text-primary">{parseFloat(selectedVariant.price_override).toFixed(2)} {currency}</span>
                         ) : optionGroups.length > 0 && calculatedPrice ? (
                             <>
                                 <span className={calculatedPrice.finalPrice !== calculatedPrice.basePrice ? 'text-primary' : ''}>
@@ -403,7 +407,6 @@ export default function ProductDetailPage({ params }) {
                 </div>
             </div>
 
-            <ProductInquiryModal product={product} isOpen={inquiryOpen} onClose={() => setInquiryOpen(false)} />
             <ProductInquiryModal product={product} isOpen={inquiryOpen} onClose={() => setInquiryOpen(false)} />
             <SampleRequestModal product={product} isOpen={sampleRequestOpen} onClose={() => setSampleRequestOpen(false)} />
 
